@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-10-15
 
 ### Added
 - `linchpin identity` command: ID001 orphaned app account, ID002 disabled in IdP but active
