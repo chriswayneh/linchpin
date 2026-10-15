@@ -113,3 +113,48 @@ def test_version_012():
     assert __version__ == "0.1.2"
     assert 'version = "0.1.2"' in (ROOT / "pyproject.toml").read_text()
     assert "## [0.1.2] - Unreleased" in (ROOT / "CHANGELOG.md").read_text()
+
+
+# QE: Okta status must be a string or null; null/missing means unknown
+@pytest.mark.parametrize("status", [{"a": 1}, 5, ["X"], True])
+def test_okta_status_must_be_string(tmp_path, status, capsys):
+    write(tmp_path, "crowd", [{"email": "a@x.com", "active": True}])
+    write(tmp_path, "okta", [{"email": "a@x.com", "status": status, "lastLogin": RECENT}])
+    with pytest.raises(LoadError, match="okta.json.*\\[0\\].*'status'"):
+        load_dir(tmp_path)
+    assert cli.main(["identity", "--data", str(tmp_path)]) == 2
+
+
+def test_okta_status_control_chars_rejected(tmp_path):
+    write(tmp_path, "okta", [{"email": "a@x.com", "status": "ACTIVE\u202e"}])
+    with pytest.raises(LoadError, match="'status'.*U\\+202E"):
+        load_dir(tmp_path)
+
+
+@pytest.mark.parametrize("okta", [{"status": None}, {}])
+def test_okta_null_or_missing_status_is_unknown(okta):
+    d = {
+        "entra": [],
+        "okta": [{"email": "a@x.com", "lastLogin": "2026-01-01T00:00:00Z", **okta}],
+        "crowd": [{"email": "a@x.com", "active": True, "lastAuthenticated": RECENT}],
+        "bitbucket": {"users": [], "events": []},
+    }
+    fs = identity_findings(d, NOW)
+    assert "ID002" not in {f.rule_id for f in fs}
+    assert [(f.rule_id, f.source) for f in fs] == [("ID003", "okta")]
+
+
+def test_okta_suspended_still_fires_id002():
+    d = {
+        "entra": [],
+        "okta": [{"email": "a@x.com", "status": "SUSPENDED", "lastLogin": RECENT}],
+        "crowd": [{"email": "a@x.com", "active": True, "lastAuthenticated": RECENT}],
+        "bitbucket": {"users": [], "events": []},
+    }
+    assert [f.rule_id for f in identity_findings(d, NOW)] == ["ID002"]
+
+
+def test_readme_badge_and_load_errors_mention_status():
+    text = (ROOT / "README.md").read_text()
+    assert "release-v0.1.2" in text
+    assert "Okta `status`" in text

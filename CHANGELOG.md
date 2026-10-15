@@ -13,6 +13,9 @@ All notable changes to this project are documented here. Format follows
   `name`, `username`) is type- and control-character-checked in every export, so a record such
   as `{"mail": "a@x.com", "email": 42}` exits 2 instead of crashing. Display names skip
   non-string values.
+- Okta `status` must be a string or null (with the control-character check); other types exit 2.
+  A null or missing status, `accountEnabled` or `active` is treated as unknown: it no longer
+  fires a false ID002 or drops the account from ID003.
 - Any `UnicodeError` while decoding an export (not only `UnicodeDecodeError`) exits 2.
 
 ## [0.1.1] - 2026-10-15

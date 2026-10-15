@@ -27,6 +27,15 @@ IDENTITY_FIELDS: dict[str, tuple[str, ...]] = {
     "bitbucket.events": _ALL_IDS,
 }
 
+# Other string fields the rules read: same string + control-character checks.
+STRING_FIELDS: dict[str, tuple[str, ...]] = {
+    "entra": (),
+    "okta": ("status",),
+    "crowd": (),
+    "bitbucket.users": (),
+    "bitbucket.events": (),
+}
+
 # Flags the rules test for truthiness must be real JSON booleans ("false" is truthy).
 BOOL_FIELDS: dict[str, tuple[str, ...]] = {
     "entra": ("accountEnabled", "isPrivileged", "mfaRegistered"),
@@ -121,7 +130,7 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
     for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             raise LoadError(f"{fname}: {label} [{i}] must be a JSON object")
-        for field in IDENTITY_FIELDS[section]:
+        for field in IDENTITY_FIELDS[section] + STRING_FIELDS[section]:
             if entry.get(field) is not None and not isinstance(entry[field], str):
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': expected a string, "
