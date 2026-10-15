@@ -18,6 +18,13 @@ All notable changes to this project are documented here. Format follows
 - Loader re-checks the opened file descriptor (non-blocking open + fstat), so a path swapped
   for a FIFO after the `is_file()` check is refused instead of blocking.
 
+### Changed
+- JSON/CSV output: ID005 evidence key `used_for_matching` is renamed `first_index` (the index
+  of the first duplicate in file order; informational only).
+- ID002 evidence values are lists of every disabled value across duplicate records,
+  deduplicated and sorted, e.g. `"okta.status": ["DEPROVISIONED", "SUSPENDED"]` and
+  `"entra.accountEnabled": [false]` (were single values).
+
 ### Docs
 - README: duplicate policy updated; missing export files make results incomplete.
 

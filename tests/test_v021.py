@@ -29,7 +29,7 @@ def test_duplicate_never_hides_disabled_okta(order):
     d["okta"] = [a, b] if order == 0 else [b, a]
     d["crowd"] = [{"email": "a@x.com", "active": True, "lastAuthenticated": RECENT}]
     [f] = [x for x in identity_findings(d, NOW) if x.rule_id == "ID002"]
-    assert f.evidence["okta.status"] == "SUSPENDED"
+    assert f.evidence["okta.status"] == ["SUSPENDED"]
 
 
 @pytest.mark.parametrize("order", [0, 1])
@@ -40,7 +40,36 @@ def test_duplicate_never_hides_disabled_entra(order):
     d["entra"] = [a, b] if order == 0 else [b, a]
     d["bitbucket"]["users"] = [{"email": "u@x.com", "active": True}]
     [f] = [x for x in identity_findings(d, NOW) if x.rule_id == "ID002"]
-    assert f.evidence["entra.accountEnabled"] is False
+    assert f.evidence["entra.accountEnabled"] == [False]
+
+
+# 1b) ID002 evidence is identical under every file order: all disabled values, deduped, sorted
+def test_id002_evidence_is_order_independent():
+    import itertools
+
+    okta = [
+        {"email": "a@x.com", "status": "ACTIVE"},
+        {"email": "A@x.com", "status": "SUSPENDED"},
+        {"email": " a@x.com", "status": "DEPROVISIONED"},
+        {"email": "a@X.com", "status": "SUSPENDED"},
+        {"email": "a@x.com", "status": None},
+    ]
+    entra = [
+        {"mail": "a@x.com", "accountEnabled": True},
+        {"mail": "A@x.com", "accountEnabled": False},
+        {"userPrincipalName": "a@x.com", "accountEnabled": None},
+    ]
+    seen = set()
+    for po in itertools.permutations(okta):
+        for pe in itertools.permutations(entra):
+            d = empty()
+            d["okta"], d["entra"] = list(po), list(pe)
+            d["crowd"] = [{"email": "a@x.com", "active": True}]
+            [f] = [x for x in identity_findings(d, NOW) if x.rule_id == "ID002"]
+            seen.add(repr(sorted(f.evidence.items())))
+            assert f.evidence["okta.status"] == ["DEPROVISIONED", "SUSPENDED"]
+            assert f.evidence["entra.accountEnabled"] == [False]
+    assert len(seen) == 1
 
 
 # 2) SIG001 must ignore events after --now, like SIG002
@@ -122,31 +151,46 @@ def test_sig002_scans_events_once(monkeypatch):
     assert calls["n"] <= 2 * 200 + 2 * 50  # linear, not 50 x 200
 
 
-# 6) a path that passes is_file() but is swapped to a FIFO must be refused, never block
+# 5b) SIG002 index keys are normalized emails (mixed case / padded event emails still match)
+def test_sig002_matches_unnormalized_event_emails():
+    d = empty()
+    d["entra"] = [{"mail": "Leaver@X.com", "employeeLeaveDateTime": "2026-09-20T00:00:00Z"}]
+    d["bitbucket"]["events"] = [
+        {"email": "  LEAVER@x.COM ", "repo": "r1", "timestamp": "2026-09-25T10:00:00Z"},
+        {"email": "leaver@x.com\t", "repo": "r2", "timestamp": "2026-09-26T10:00:00Z"},
+    ]
+    [f] = [x for x in signal_findings(d, NOW) if x.rule_id == "SIG002"]
+    assert f.user == "leaver@x.com" and f.evidence["events_after_leave"] == 2
+    assert f.evidence["repos"] == ["r1", "r2"]
+
+
+# 6) a path that passes is_file() but is swapped to a FIFO must be refused, never block.
+# No writer ever opens the FIFO: a blocking open would hang, so the load runs in a daemon thread
+# and must finish within 1 s.
 @pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="needs FIFOs")
 def test_fifo_swap_is_refused_without_blocking(tmp_path, monkeypatch):
     fifo = tmp_path / "okta.json"
     os.mkfifo(fifo)
     monkeypatch.setattr(Path, "is_file", lambda self: True)  # the race: checked as a file
+    result: dict[str, BaseException] = {}
 
-    # Unblocks a blocking open so a regression fails instead of hanging; with the fix the
-    # timer is cancelled before it fires, hence no coverage.
-    def late_writer():  # pragma: no cover
+    def load():
         try:
-            fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
-        except OSError:
-            return
-        os.write(fd, b"[]")
-        os.close(fd)
-
-    t = threading.Timer(2.0, late_writer)
-    t.start()
-    try:
-        with pytest.raises(loader.LoadError, match="not a regular file"):
             loader._read_capped(fifo)
-    finally:
-        t.cancel()
-        t.join()
+        except BaseException as exc:  # noqa: BLE001 - recorded and asserted below
+            result["exc"] = exc
+
+    t = threading.Thread(target=load, daemon=True)
+    t.start()
+    t.join(timeout=1.0)
+    blocked = t.is_alive()
+    if blocked:  # pragma: no cover - only on regression: unblock the hung open, then fail
+        fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+        os.close(fd)
+        t.join(timeout=5)
+    assert not blocked, "loading a FIFO blocked (open without O_NONBLOCK?)"
+    assert isinstance(result.get("exc"), loader.LoadError)
+    assert "not a regular file" in str(result["exc"])
 
 
 def test_version_021_docs():
@@ -158,3 +202,15 @@ def test_version_021_docs():
     assert "## [0.2.1] - Unreleased" in (root / "CHANGELOG.md").read_text()
     readme = (root / "README.md").read_text()
     assert "fires if any of them is" in readme and "incomplete" in readme
+    assert "Real output from v0.2.1." in readme and "Real output from v0.2.0" not in readme
+    assert "linchpin.git@v0.2.1" in readme and "linchpin.git@v0.2.0" not in readme
+    assert "linchpin.git@main" not in readme
+    assert "used_for_matching" not in readme and "`first_index`" in readme
+    assert "informational" in readme
+    roadmap = (root / "ROADMAP.md").read_text()
+    assert "v0.2.1 checks every duplicate" in roadmap
+    changelog = (root / "CHANGELOG.md").read_text().split("## [0.2.0]")[0]
+    assert "### Changed" in changelog and "`used_for_matching`" in changelog
+    assert "`first_index`" in changelog
+    demo_src = (root / "src" / "linchpin" / "demo.py").read_text()
+    assert "used for matching" not in demo_src

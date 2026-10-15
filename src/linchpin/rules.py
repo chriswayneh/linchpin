@@ -124,7 +124,7 @@ def _duplicate_findings(data: dict[str, Any]) -> list[Finding]:
                     email,
                     source,
                     RULES["ID005"],
-                    {"count": len(indexes), "used_for_matching": indexes[0], "records": records},
+                    {"count": len(indexes), "first_index": indexes[0], "records": records},
                 )
             )
     return findings
@@ -157,17 +157,21 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
                 )
             )
             continue
+        # Every duplicate record is checked; evidence lists each disabled value once, sorted, so
+        # it is identical whatever the file order. A null or missing value is unknown, not
+        # disabled.
         disabled: dict[str, Any] = {}
         if any(r.get("accountEnabled") is False for r in rec.get("entra", [])):
-            disabled["entra.accountEnabled"] = False
-        # A null or missing Okta status is unknown, not disabled.
-        okta_bad = [
-            st
-            for r in rec.get("okta", [])
-            if (st := r.get("status")) is not None and st != "ACTIVE"
-        ]
+            disabled["entra.accountEnabled"] = [False]
+        okta_bad = sorted(
+            {
+                st
+                for r in rec.get("okta", [])
+                if (st := r.get("status")) is not None and st != "ACTIVE"
+            }
+        )
         if okta_bad:
-            disabled["okta.status"] = okta_bad[0]
+            disabled["okta.status"] = okta_bad
         if disabled:
             findings.append(
                 Finding(

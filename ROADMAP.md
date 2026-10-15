@@ -8,10 +8,11 @@ explainable flags, table/JSON/CSV output, pytest ≥85% coverage, ruff.
 
 ## v0.2: Duplicate identities and Markdown reports (done, 0.2.0)
 ID005 duplicate-identity policy: several records with the same normalized email in one
-provider export are reported with evidence, and the first record in file order is used for
-matching. `--format markdown` reports: summary counts by severity and rule plus a safely
+provider export are reported with evidence (in 0.2.0 the first record in file order was used for
+matching). `--format markdown` reports: summary counts by severity and rule plus a safely
 escaped findings table. Pulled forward from the correlation and reporting phases because they
 fix a silent correctness gap and give auditors a shareable report without new inputs.
+v0.2.1 checks every duplicate for ID002: a disabled duplicate fires whatever the file order.
 
 ## v0.3: Real exports
 Parsers for native export formats (Entra Graph JSON, Okta CSV/API JSON, Crowd XML/CSV,

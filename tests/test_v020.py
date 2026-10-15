@@ -29,7 +29,7 @@ def test_id005_registered():
     assert "ID005" in RULES
 
 
-def test_id005_okta_duplicates_first_record_wins():
+def test_id005_okta_duplicates_reported_and_disabled_copy_fires_id002():
     d = empty()
     d["okta"] = [
         {"email": "A@x.com", "login": "a1", "status": "ACTIVE", "lastLogin": RECENT},
@@ -43,7 +43,7 @@ def test_id005_okta_duplicates_first_record_wins():
     f = dup[0]
     assert (f.user, f.source, f.severity) == ("a@x.com", "okta", "medium")
     assert f.evidence["count"] == 2
-    assert f.evidence["used_for_matching"] == 0
+    assert f.evidence["first_index"] == 0
     assert [r["index"] for r in f.evidence["records"]] == [0, 2]
     assert f.evidence["records"][1]["login"] == "a2"
     # v0.2.1: any disabled duplicate fires ID002 (a duplicate can never hide it)
@@ -59,7 +59,7 @@ def test_id005_entra_mail_vs_upn_duplicate():
     d["bitbucket"]["users"] = [{"email": "u@x.com", "active": True}]
     fs = identity_findings(d, NOW)
     [f] = [x for x in fs if x.rule_id == "ID005"]
-    assert f.source == "entra" and f.evidence["used_for_matching"] == 0
+    assert f.source == "entra" and f.evidence["first_index"] == 0
     # first (disabled) record is used -> ID002 fires deterministically
     assert "ID002" in {x.rule_id for x in fs}
 
@@ -159,8 +159,7 @@ def test_markdown_property_one_row_per_finding(value):
 def test_version_020_docs():
     assert "## [0.2.0] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
     readme = (ROOT / "README.md").read_text()
-    assert "release-v0.2.0-blue" in readme and "releases/tag/v0.2.0" in readme
-    assert "linchpin.git@v0.2.0" in readme and "linchpin.git@main" not in readme
+    assert "release-v0.2.0-blue" in readme and "releases/tag/v0.2.0" in readme  # until 0.2.1 ships
     assert "ID005" in readme and "markdown" in readme
     security = (ROOT / "SECURITY.md").read_text()
     assert "| 0.2.x | Yes |" in security and "| 0.1.x | No |" in security

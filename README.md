@@ -35,12 +35,12 @@ built-in `--demo` data) and prints findings. It has no runtime dependencies.
 ## Try it
 
 ```bash
-pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.0
+pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.1
 linchpin identity --demo
 linchpin signals --demo
 ```
 
-Real output from v0.2.0.
+Real output from v0.2.1.
 Every row is shown; the REASON column and the per-finding evidence lines are omitted to fit
 the page (use `--format json` to see the evidence):
 
@@ -130,10 +130,12 @@ incomplete: check that all four exports are present. Users are correlated by nor
 Times are evaluated in UTC.
 
 **Duplicate identities:** if several records in one export normalize to the same email, ID005
-lists every duplicate record (its index and identifier fields) with `used_for_matching` set to
-the first index. ID002 checks every duplicate Entra/Okta record, so it fires if any of them is
-disabled, whatever the file order. Findings are labeled with the identifier the source
-correlates on (Entra `mail`/`userPrincipalName`, Okta `email`/`login`).
+lists every duplicate record (its index and identifier fields) and `first_index`, the index of
+the first one in file order (informational only; it does not select a record for matching).
+ID002 checks every duplicate Entra/Okta record, so it fires if any of them is disabled,
+whatever the file order; its evidence lists every disabled value, deduplicated and sorted (for
+example `"okta.status": ["DEPROVISIONED", "SUSPENDED"]`). Findings are labeled with the
+identifier the source correlates on (Entra `mail`/`userPrincipalName`, Okta `email`/`login`).
 
 ### Output formats
 

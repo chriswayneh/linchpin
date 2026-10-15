@@ -72,8 +72,8 @@ def test_orphan_and_disabled():
     orphan = [f for f in fs if f.rule_id == "ID001"]
     assert [f.user for f in orphan] == ["ghost@x.com"]
     dis = {f.user: f.evidence for f in fs if f.rule_id == "ID002"}
-    assert dis["dis@x.com"]["entra.accountEnabled"] is False
-    assert dis["sus@x.com"]["okta.status"] == "SUSPENDED"
+    assert dis["dis@x.com"]["entra.accountEnabled"] == [False]  # v0.2.1: list of disabled values
+    assert dis["sus@x.com"]["okta.status"] == ["SUSPENDED"]
 
 
 def test_stale_and_missing_login():
