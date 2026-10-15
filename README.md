@@ -132,7 +132,8 @@ flowchart LR
 
 Load errors include a missing data directory, a non-regular file, a file over 200 MB, unreadable
 files, invalid UTF-8 or JSON, nesting too deep, malformed entries, non-string or control-character
-identity fields, and invalid timestamps. Errors are one line on stderr, without a traceback.
+identity fields, non-boolean MFA/privilege/active flags, and invalid timestamps. Email syntax is
+not validated. Errors are one line on stderr, without a traceback.
 
 ## Hardening
 

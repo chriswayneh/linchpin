@@ -34,7 +34,8 @@ NO_EMAIL = "(no email)"
 def display_id(u: dict[str, Any]) -> str:
     """Best identifier for a finding: email, else login/name/username, else ``(no email)``."""
     for key in ("email", "mail", "userPrincipalName"):
-        if email := norm_email(u.get(key)):
+        value = u.get(key)
+        if isinstance(value, str) and (email := norm_email(value)):
             return email
     for key in ("login", "name", "username"):
         value = u.get(key)

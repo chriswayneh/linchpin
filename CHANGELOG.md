@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [0.1.2] - Unreleased
+
+### Fixed
+- MFA, privilege, enabled and active flags (`mfaRegistered`, `isPrivileged`, `accountEnabled`,
+  `mfaEnrolled`, `isAdmin`, `active`) must be JSON booleans or null; a string such as
+  `"false"` was treated as true. Other types now raise a clear error (exit 2).
+- Every identifier field the rules read (`email`, `mail`, `userPrincipalName`, `login`,
+  `name`, `username`) is type- and control-character-checked in every export, so a record such
+  as `{"mail": "a@x.com", "email": 42}` exits 2 instead of crashing. Display names skip
+  non-string values.
+- Any `UnicodeError` while decoding an export (not only `UnicodeDecodeError`) exits 2.
+
 ## [0.1.1] - 2026-10-15
 
 ### Security (Red Team review)

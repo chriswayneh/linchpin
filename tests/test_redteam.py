@@ -113,6 +113,7 @@ def test_security_md():
 
 
 def test_version_011():
-    assert __version__ == "0.1.1"
-    assert 'version = "0.1.1"' in (ROOT / "pyproject.toml").read_text()
+    # Pinned version moved to the current release test; keep the 0.1.1 entry check and
+    # require pyproject and __version__ to agree.
+    assert f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text()
     assert "## [0.1.1]" in (ROOT / "CHANGELOG.md").read_text()
