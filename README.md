@@ -1,8 +1,7 @@
 # linchpin
 
-CLI-only, read-only identity review across Microsoft Entra ID, Okta, Atlassian Crowd and
-Bitbucket: correlates user exports by email and flags identity-hygiene and insider-risk
-signals. Every flag is explainable, with a rule id, a reason and the evidence fields behind it.
+**A read-only CLI that finds identity drift across Entra ID, Okta, Atlassian Crowd and
+Bitbucket, and explains every finding.**
 
 [![CI][ci-badge]][ci] [![License: MIT][lic-badge]](LICENSE) [![Python][py-badge]](pyproject.toml)
 [![Release][rel-badge]][rel]
@@ -14,8 +13,62 @@ signals. Every flag is explainable, with a rule id, a reason and the evidence fi
 [rel-badge]: https://img.shields.io/badge/release-v0.1.2-blue.svg
 [rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.2
 
+## The problem
+
+Each system has its own copy of your users, and they drift apart:
+
+- **Leavers still active in apps:** disabled in Entra or Okta, still enabled in Crowd or
+  Bitbucket, sometimes still cloning repos after their leave date.
+- **Privileged users without MFA:** Entra privileged roles or Okta admins with no MFA enrolled.
+- **Stale and orphaned accounts:** no login in months, or app accounts with no identity
+  provider record at all.
+
+linchpin correlates the four exports by email and flags these cases. Each finding has a rule
+id, a severity, a reason and the exact evidence fields behind it.
+
+**Who it's for:** IAM and security engineers, auditors who need explainable evidence, and
+platform teams who own Atlassian and Bitbucket access.
+
 linchpin never calls an identity provider or application. It reads exported JSON files (or
 built-in `--demo` data) and prints findings. It has no runtime dependencies.
+
+## Try it
+
+```bash
+pip install git+https://github.com/chriswayneh/linchpin.git@v0.1.2
+linchpin identity --demo
+linchpin signals --demo
+```
+
+Real output from v0.1.2. Every row is shown; the REASON column and the per-finding evidence
+lines are omitted to fit the page (use `--format json` to see the evidence):
+
+```text
+$ linchpin identity --demo
+RULE_ID  SEVERITY  USER                          SOURCE
+-------  --------  ----------------------------  ---------
+ID004    critical  hugo.evans@example.com        okta
+ID004    critical  isla.hughes@example.com       entra
+ID001    high      contractor.old@example.com    bitbucket
+ID001    high      svc.legacy-build@example.com  crowd
+ID002    high      ben.adams@example.com         bitbucket
+ID002    high      ben.adams@example.com         crowd
+ID002    high      dev.adams@example.com         bitbucket
+ID002    high      dev.adams@example.com         crowd
+ID003    medium    dev.chen@example.com          crowd
+ID003    medium    sam.nguyen@example.com        okta
+10 finding(s).
+
+$ linchpin signals --demo
+RULE_ID  SEVERITY  USER                      SOURCE
+-------  --------  ------------------------  ---------
+SIG002   critical  ben.adams@example.com     bitbucket
+SIG001   high      chloe.garcia@example.com  bitbucket
+2 finding(s).
+```
+
+`--demo` uses seeded fake users on `example.com` across all four sources, so no tenant or
+export is needed. The same seed always gives the same output.
 
 ## Install
 
@@ -35,9 +88,6 @@ linchpin identity --demo                 # identity hygiene, table output
 linchpin signals --demo --format json    # insider-risk signals as JSON
 linchpin identity --data ./exports --format csv > identity.csv
 ```
-
-`--demo` uses seeded fake users on `example.com` across all four sources, so no tenant or
-export is needed.
 
 ## Commands
 
@@ -101,22 +151,24 @@ user.
 
 ```mermaid
 flowchart LR
-    files["Export files<br/>entra / okta / crowd / bitbucket .json"] --> loader
-    demoflag["--demo"] --> demo
-    cli["cli.py<br/>argparse, --now and window checks"] --> loader
-    cli --> demo
-    loader["loader.py<br/>regular file, 200 MB cap, UTF-8 JSON,<br/>schema + control-char checks"]
+    entry["linchpin console script<br/>or python -m linchpin"] --> cli
+    cli["cli.py<br/>argparse, --now and window checks,<br/>exit codes"]
+    files[("Export files<br/>entra, okta, crowd,<br/>bitbucket .json")] --> loader
+    cli -->|"--data DIR"| loader
+    cli -->|"--demo"| demo
+    loader["loader.py<br/>regular file, 200 MB cap, UTF-8 JSON,<br/>type + control-char checks"]
     demo["demo.py<br/>seeded fake exports"]
     loader --> data(("exports dict"))
     demo --> data
-    data --> rules["rules.py<br/>identity_findings, signal_findings"]
+    data --> rules["rules.py<br/>identity_findings / signal_findings"]
+    rules --> findings(("sorted Findings"))
+    findings --> output["output.py<br/>table / json / csv"]
+    output --> stdout(["stdout"])
     models["models.py<br/>Finding, parse_ts, norm_email,<br/>control-char helpers"]
+    models -.-> cli
     models -.-> loader
     models -.-> rules
     models -.-> output
-    rules --> findings(("list of Finding"))
-    findings --> output["output.py<br/>table / json / csv"]
-    output --> stdout["stdout"]
 ```
 
 | Module | Role | Imports (linchpin modules) |
