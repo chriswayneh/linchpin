@@ -13,7 +13,8 @@ All notable changes to this project are documented here. Format follows
 - `--data DIR` loader for `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json`.
 - Explainable findings (`rule_id`, `severity`, `user`, `source`, `reason`, `evidence`).
 - Output formats: table, JSON, CSV (CSV cells guarded against formula injection).
-- Tooling: pytest with branch coverage (fail-under 85), ruff, mypy (strict), bandit, pip-audit.
+- Tooling: pytest with branch coverage and hypothesis (fail-under 85), ruff, mypy (strict),
+  bandit, pip-audit.
 
 ### Fixed (QE review of PR #1)
 - Invalid timestamps in `--data` exports raise a clear error naming file and field (exit 2).
@@ -21,4 +22,7 @@ All notable changes to this project are documented here. Format follows
 - SIG002 evidence ignores missing/`None` repo values (previously crashed sorting).
 - mypy error in repo collection fixed via `isinstance` narrowing.
 - `--stale-days` and `--mass-threshold` must be >= 1; `--leaver-window-days` >= 0.
-- Accounts with empty emails are no longer correlated with each other.
+- Accounts with empty emails are no longer correlated with each other; their ID003/ID004
+  findings show login, name, or username instead, else `(no email)`.
+- Non-string email/identity fields in exports raise a clear error (exit 2).
+- CSV output strips control characters (NUL crashed the csv writer on Python 3.10).

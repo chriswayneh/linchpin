@@ -28,6 +28,21 @@ RULES = {
 }
 
 
+NO_EMAIL = "(no email)"
+
+
+def display_id(u: dict[str, Any]) -> str:
+    """Best identifier for a finding: email, else login/name/username, else ``(no email)``."""
+    for key in ("email", "mail", "userPrincipalName"):
+        if email := norm_email(u.get(key)):
+            return email
+    for key in ("login", "name", "username"):
+        value = u.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return NO_EMAIL
+
+
 def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     idx: dict[str, dict[str, Any]] = defaultdict(dict)
     for u in data["entra"]:
@@ -95,9 +110,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
                 continue
             last = parse_ts(u.get(ts_field))
             if last is None or last < cutoff:
-                email = norm_email(
-                    u.get("email") or u.get("mail") or u.get("userPrincipalName") or u.get("login")
-                )
+                email = display_id(u)
                 days = None if last is None else (now - last).days
                 findings.append(
                     Finding(
@@ -116,7 +129,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
 
     for u in data["entra"]:
         if u.get("isPrivileged") and not u.get("mfaRegistered"):
-            email = norm_email(u.get("mail") or u.get("userPrincipalName"))
+            email = display_id(u)
             findings.append(
                 Finding(
                     "ID004",
@@ -129,7 +142,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
             )
     for u in data["okta"]:
         if u.get("isAdmin") and not u.get("mfaEnrolled"):
-            email = norm_email(u.get("email") or u.get("login"))
+            email = display_id(u)
             findings.append(
                 Finding(
                     "ID004",

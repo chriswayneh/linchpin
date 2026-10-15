@@ -18,8 +18,9 @@ linchpin identity --data ./exports --format csv
 ```
 
 `--data DIR` reads `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json` (missing files
-are treated as empty; malformed entries or timestamps exit with code 2). Users are correlated by normalized email. `--demo` data is seeded
-(`--seed`, `--users 7..300`) and uses `example.com` addresses only. Times are evaluated in UTC.
+are treated as empty; malformed entries, emails, or timestamps exit with code 2). Users are
+correlated by normalized email. `--demo` data is seeded (`--seed`, `--users 7..300`) and uses
+`example.com` addresses only. Times are evaluated in UTC.
 
 | Rule | Severity | Meaning |
 |---|---|---|
@@ -27,8 +28,11 @@ are treated as empty; malformed entries or timestamps exit with code 2). Users a
 | ID002 | high | Disabled in Entra / non-ACTIVE in Okta but active in Crowd/Bitbucket |
 | ID003 | medium | Active Entra/Okta/Crowd account with no login in `--stale-days` (90) |
 | ID004 | critical | Entra privileged or Okta admin without MFA |
-| SIG001 | high | ≥ `--mass-threshold` (10) distinct repos touched off-hours (weekend or outside 07–20 UTC) in one day |
-| SIG002 | critical | Bitbucket activity after an Entra leave date within `--leaver-window-days` (30) |
+| SIG001 | high | ≥ `--mass-threshold` (10) distinct repos off-hours in one UTC day |
+| SIG002 | critical | Bitbucket activity after a leave date within `--leaver-window-days` (30) |
+
+Off-hours means a weekend, or outside 07:00–20:00 UTC.
+Findings for accounts without an email use login, name, or username, else `(no email)`.
 
 Every finding has `rule_id`, `severity`, `user`, `source`, `reason`, and `evidence`.
 

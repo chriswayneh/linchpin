@@ -16,6 +16,14 @@ FILES = {
 }
 
 
+IDENTITY_FIELDS: dict[str, tuple[str, ...]] = {
+    "entra": ("mail", "userPrincipalName"),
+    "okta": ("email", "login"),
+    "crowd": ("email", "name"),
+    "bitbucket.users": ("email", "username"),
+    "bitbucket.events": ("email",),
+}
+
 TIMESTAMP_FIELDS: dict[str, tuple[str, ...]] = {
     "entra": ("lastSignInDateTime", "employeeLeaveDateTime"),
     "okta": ("lastLogin",),
@@ -72,6 +80,12 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
     for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             raise LoadError(f"{fname}: {label} [{i}] must be a JSON object")
+        for field in IDENTITY_FIELDS[section]:
+            if entry.get(field) is not None and not isinstance(entry[field], str):
+                raise LoadError(
+                    f"{fname}: {label} [{i}] field '{field}': expected a string, "
+                    f"got {type(entry[field]).__name__}"
+                )
         for field in TIMESTAMP_FIELDS[section]:
             value = entry.get(field)
             if value is None or value == "":

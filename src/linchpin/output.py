@@ -19,9 +19,14 @@ def to_json(findings: list[Finding]) -> str:
     return json.dumps([f.to_dict() for f in findings], indent=2, sort_keys=True)
 
 
+_CONTROL = {c: None for c in range(32)} | {127: None}
+
+
 def _safe_cell(value: str) -> str:
-    """Neutralise spreadsheet formula injection in CSV cells."""
-    return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
+    """Strip control characters (incl. NUL, which crashes csv on 3.10) and neutralise
+    spreadsheet formula injection in CSV cells."""
+    value = value.translate(_CONTROL)
+    return "'" + value if value[:1] in ("=", "+", "-", "@") else value
 
 
 def to_csv(findings: list[Finding]) -> str:
