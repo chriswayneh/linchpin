@@ -23,4 +23,10 @@ and flag identity-hygiene and insider-risk signals for IAM / security teams.
 `crowd.json`, `bitbucket.json`. Users are correlated by normalized email.
 
 ## Outputs
-`--format table` (default), `json`, `csv`. Exit code 0 always in v0.1 (gating comes later).
+`--format table` (default), `json`, `csv`.
+
+## Exit codes
+- `0`: success, with or without findings (finding-based gating is planned for v0.5).
+- `2`: usage errors (bad arguments or flag values, invalid or too early `--now`) and load errors
+  (unreadable, oversized or malformed exports).
+- `1`: only on an unexpected crash (uncaught exception); never returned on purpose.

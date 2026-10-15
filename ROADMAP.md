@@ -12,6 +12,8 @@ Bitbucket audit log), schema validation, clear parse errors.
 
 ## v0.3: Correlation
 Alias/UPN matching beyond email, manual mapping file, confidence scores on joins.
+Duplicate-identity policy: detect several records with the same normalized email in one
+provider export, report them as a diagnostic or finding, and document which record is used.
 
 ## v0.4: Rules config
 YAML rule config (thresholds, business hours, timezones), enable/disable rules,
@@ -35,3 +37,8 @@ Fuzzing of parsers, docs site, packaging, signed releases.
 
 ## v1.0: Stable
 Stable rule ids and output schema, semantic versioning guarantees, PyPI release.
+
+## Known limitations
+- Duplicate emails within the same provider export: when two records in one export normalize to
+  the same email, the last record wins silently. The v0.3 duplicate-identity policy addresses
+  this.
