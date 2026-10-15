@@ -5,3 +5,36 @@ Okta, Atlassian Crowd, and Bitbucket to flag identity-hygiene and insider-risk s
 Every flag is explainable: rule id, reason, and the evidence fields behind it.
 
 See [SPEC.md](SPEC.md) and [ROADMAP.md](ROADMAP.md). Status: pre-release.
+
+## Quick start (v0.1)
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -e '.[dev]'
+
+linchpin identity --demo                 # identity hygiene, table output
+linchpin signals  --demo --format json   # insider-risk signals as JSON
+linchpin identity --data ./exports --format csv
+```
+
+`--data DIR` reads `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json` (missing files
+are treated as empty). Users are correlated by normalized email. `--demo` data is seeded
+(`--seed`, `--users 7..300`) and uses `example.com` addresses only. Times are evaluated in UTC.
+
+| Rule | Severity | Meaning |
+|---|---|---|
+| ID001 | high | Active Crowd/Bitbucket account with no Entra or Okta identity (orphan) |
+| ID002 | high | Disabled in Entra / non-ACTIVE in Okta but active in Crowd/Bitbucket |
+| ID003 | medium | Active Entra/Okta/Crowd account with no login in `--stale-days` (90) |
+| ID004 | critical | Entra privileged or Okta admin without MFA |
+| SIG001 | high | ≥ `--mass-threshold` (10) distinct repos touched off-hours (weekend or outside 07–20 UTC) in one day |
+| SIG002 | critical | Bitbucket activity after an Entra leave date within `--leaver-window-days` (30) |
+
+Every finding has `rule_id`, `severity`, `user`, `source`, `reason`, and `evidence`.
+
+## Development
+
+```bash
+ruff check . && ruff format --check .
+pytest            # enforces --cov-fail-under=85
+```
