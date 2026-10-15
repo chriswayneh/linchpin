@@ -37,6 +37,9 @@ def test_changelog_mentions_digit_limit():
         ["signals", "--demo", "--now", "0001-01-02T00:00:00Z"],
         ["identity", "--demo", "--stale-days", "999999999999"],
         ["signals", "--demo", "--leaver-window-days", "999999999999"],
+        ["identity", "--demo", "--now", "0001-06-01T00:00:00Z"],
+        ["identity", "--demo", "--now", "0001-01-02T00:00:00Z", "--stale-days", "1"],
+        ["signals", "--demo", "--now", "0001-01-02T00:00:00Z", "--leaver-window-days", "0"],
     ],
 )
 def test_cli_now_overflow_exit_2(argv, capsys):
@@ -44,6 +47,11 @@ def test_cli_now_overflow_exit_2(argv, capsys):
         cli.main(argv)
     assert exc.value.code == 2
     assert "--now" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("cmd", ["identity", "signals"])
+def test_cli_demo_latest_now_ok(cmd):
+    assert cli.main([cmd, "--demo", "--now", "9999-12-31T23:59:59Z"]) == 0
 
 
 def test_cli_early_but_valid_now_ok():

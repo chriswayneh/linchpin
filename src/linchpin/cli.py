@@ -71,7 +71,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.demo:
             now = now or DEMO_NOW
-            data = generate(seed=args.seed, users=args.users, now=now)
+            try:
+                data = generate(seed=args.seed, users=args.users, now=now)
+            except OverflowError:
+                # Demo data is dated up to ~200 days before --now; any offset that falls
+                # outside datetime's range is reported as a bad --now (exit 2).
+                parser.error(f"--now {args.now!r} is too early to generate demo data")
         else:
             now = now or datetime.now(timezone.utc)
             data = load_dir(args.data)

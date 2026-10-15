@@ -17,7 +17,8 @@ All notable changes to this project are documented here. Format follows
 - Exports must be regular files (directories and devices such as a symlink to `/dev/zero`
   are refused). At most 200 MB + 1 byte is read, so oversized files are refused without
   trusting `st_size`; read errors (OSError) exit 2.
-- `--now` values that overflow, or are too early for the stale/leaver window, are rejected
+- `--now` values that overflow, are too early for the stale/leaver window, or are too early
+  to generate `--demo` data (which is dated up to ~200 days before `--now`), are rejected
   with exit 2.
 - Demo timestamps zero-pad years below 1000 so they round-trip through the parser.
 - CSV formula-injection guard ignores leading whitespace (e.g. `" =cmd"`).
