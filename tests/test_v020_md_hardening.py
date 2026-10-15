@@ -114,3 +114,14 @@ def test_markdown_dev_extras_and_docs():
     roadmap = (ROOT / "ROADMAP.md").read_text()
     assert "(in progress, 0.2.0)" in roadmap
     assert "autolink" in (ROOT / "README.md").read_text()
+
+
+# Mutation guard: '!', '(' and ')' must stay in the backslash-escape set.
+@pytest.mark.parametrize("value", ["![i](x)", "(a)!", "![i](http://e/x.png)"])
+def test_bang_and_parens_are_escaped(value):
+    md = to_markdown([finding(value)])
+    row = data_rows(md)[0]
+    assert "\\!" in row and "\\(" in row and "\\)" in row
+    assert "![" not in row.replace("\\![", "") and "](" not in row.replace("\\](", "")
+    for html in renders(md):
+        assert "<a" not in html and "<img" not in html
