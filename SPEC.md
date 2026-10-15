@@ -23,7 +23,8 @@ and flag identity-hygiene and insider-risk signals for IAM / security teams.
 `crowd.json`, `bitbucket.json`. Users are correlated by normalized email.
 
 ## Outputs
-`--format table` (default), `json`, `csv`.
+`--format table` (default), `json`, `csv`, `markdown` (summary counts plus a findings table,
+escaped so exported values cannot inject HTML, links or table breaks).
 
 ## Exit codes
 - `0`: success, with or without findings (finding-based gating is planned for v0.6).

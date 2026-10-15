@@ -61,18 +61,24 @@ def to_table(findings: list[Finding]) -> str:
 
 
 _SEVERITIES = ("critical", "high", "medium", "low")
-_MD_ESCAPE = {c: "\\" + c for c in "\\`*_[]|~"}
+_MD_ESCAPE = {c: "\\" + c for c in "\\`*_[]|~!()"}
+# Defeat GFM / linkify autolinks (URLs, www., emails): ':', '.', '/' and '@' become numeric
+# character references, and a WORD JOINER reference follows ':', '.' and '@' so renderers that
+# decode references before autolinking still see a broken scheme, domain or address.
+_WJ = "&#8288;"
+_MD_ENTITIES = {":": "&#58;" + _WJ, ".": "&#46;" + _WJ, "/": "&#47;", "@": "&#64;" + _WJ}
 
 
 def _md_cell(value: object) -> str:
     """Make text safe inside a Markdown table cell.
 
-    Control characters (incl. newlines) are stripped, HTML is entity-escaped (no raw tags),
-    and Markdown syntax characters, including the ``|`` cell separator, are backslash-escaped.
+    Control characters and line separators are stripped, HTML is entity-escaped (no raw tags),
+    Markdown syntax characters (including the ``|`` cell separator) are backslash-escaped, and
+    URL/email characters are written as references so nothing is autolinked.
     """
     text = strip_control(str(value))
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return "".join(_MD_ESCAPE.get(c, c) for c in text)
+    return "".join(_MD_ENTITIES.get(c) or _MD_ESCAPE.get(c, c) for c in text)
 
 
 def to_markdown(findings: list[Finding]) -> str:

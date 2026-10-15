@@ -10,11 +10,14 @@ All notable changes to this project are documented here. Format follows
   or Bitbucket users) normalize to the same email, one finding lists every duplicate record
   (index and identifier/status fields) and `used_for_matching`.
 - `--format markdown`: a report with summary counts by severity and by rule, then a findings
-  table. Cells strip control characters, entity-escape `&`, `<`, `>` and backslash-escape
-  Markdown syntax including `|`.
+  table. Cells strip control characters and line separators, entity-escape `&`, `<`, `>`,
+  backslash-escape Markdown syntax including `|`, and write `:`, `.`, `/`, `@` as character
+  references so GFM and linkify renderers produce no autolinks, links or images.
 - Demo data includes a duplicate Okta record so ID005 appears in `identity --demo`.
 
 ### Changed
+- U+2028/U+2029 (Unicode line/paragraph separators, Zl/Zp) are treated as control characters:
+  rejected in identity fields and stripped from all output formats.
 - Duplicate policy: the first record in file order is used for Entra/Okta matching (was a
   silent last-record-wins). This can change ID002 results for exports with duplicates.
 - ROADMAP: v0.2 is the duplicate-identity and Markdown work; later phases renumbered (real

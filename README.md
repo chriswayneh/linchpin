@@ -133,9 +133,11 @@ index and identifier fields) with `used_for_matching` set to the first index.
 ### Output formats
 
 `table` (default), `json`, `csv`, and `markdown`: a report with summary counts by severity and
-by rule, then a findings table. In Markdown output, control characters are removed, `&`, `<`
-and `>` become HTML entities, and Markdown syntax characters (including `|`) are
-backslash-escaped, so exported values cannot break the table or inject HTML or links.
+by rule, then a findings table. In Markdown output, control characters and Unicode line
+separators are removed, `&`, `<` and `>` become HTML entities, Markdown syntax characters
+(including `|`) are backslash-escaped, and `:`, `.`, `/` and `@` are written as character
+references (with an invisible word joiner) so GitHub and linkify renderers create no autolinks,
+links or images.
 
 ## Rules
 
@@ -210,10 +212,11 @@ Errors are one line on stderr, without a traceback.
 
 ## Hardening
 
-- **Control characters:** identity fields containing Unicode Cc, Cf or Cs characters (C0/C1
-  controls including CSI, bidi overrides and isolates, zero-width characters, unpaired
-  surrogates) are rejected on load, and the error names the code point (e.g. `U+200D`), never
-  the raw character. Table and CSV output strip the same categories.
+- **Control characters:** identity fields containing Unicode Cc, Cf, Cs, Zl or Zp characters
+  (C0/C1 controls including CSI, bidi overrides and isolates, zero-width characters, unpaired
+  surrogates, U+2028/U+2029 line separators) are rejected on load, and the error names the code
+  point (e.g. `U+200D`), never the raw character. Table, CSV and Markdown output strip the same
+  categories.
 - **Bounded reads:** each export must be a regular file (`is_file()`), so directories and
   devices such as a symlink to `/dev/zero` are refused. At most 200 MB + 1 byte is read, so
   the cap does not trust `st_size`.

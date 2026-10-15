@@ -136,7 +136,7 @@ def test_sig002_old_leaver_with_activity_not_flagged():
 def test_dev_extras_include_tooling():
     # text check (tomllib is 3.11+, CI also runs 3.10)
     text = (ROOT / "pyproject.toml").read_text()
-    dev = text.split("dev = [", 1)[1].split("]", 1)[0]
+    dev = text.split("dev = [", 1)[1].split("\n]", 1)[0]  # extras like pkg[x] contain "]"
     for tool in ("mypy", "bandit", "pip-audit"):
         assert f'"{tool}' in dev
     assert "--cov-branch" in text
