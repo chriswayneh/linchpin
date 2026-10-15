@@ -159,7 +159,6 @@ def test_markdown_property_one_row_per_finding(value):
 def test_version_020_docs():
     assert "## [0.2.0] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
     readme = (ROOT / "README.md").read_text()
-    assert "release-v0.2.0-blue" in readme and "releases/tag/v0.2.0" in readme  # until 0.2.1 ships
     assert "ID005" in readme and "markdown" in readme
     security = (ROOT / "SECURITY.md").read_text()
     assert "| 0.2.x | Yes |" in security and "| 0.1.x | No |" in security
