@@ -10,8 +10,8 @@ Bitbucket, and explains every finding.**
 [ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
 [lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
-[rel-badge]: https://img.shields.io/badge/release-v0.1.2-blue.svg
-[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.2
+[rel-badge]: https://img.shields.io/badge/release-v0.2.0-blue.svg
+[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.2.0
 
 ## The problem
 
@@ -35,12 +35,12 @@ built-in `--demo` data) and prints findings. It has no runtime dependencies.
 ## Try it
 
 ```bash
-pip install git+https://github.com/chriswayneh/linchpin.git@main
+pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.0
 linchpin identity --demo
 linchpin signals --demo
 ```
 
-Real output from `main` (0.2.0, unreleased; at release the install pin moves to `@v0.2.0`).
+Real output from v0.2.0.
 Every row is shown; the REASON column and the per-finding evidence lines are omitted to fit
 the page (use `--format json` to see the evidence):
 
