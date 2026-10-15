@@ -18,7 +18,7 @@ linchpin identity --data ./exports --format csv
 ```
 
 `--data DIR` reads `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json` (missing files
-are treated as empty). Users are correlated by normalized email. `--demo` data is seeded
+are treated as empty; malformed entries or timestamps exit with code 2). Users are correlated by normalized email. `--demo` data is seeded
 (`--seed`, `--users 7..300`) and uses `example.com` addresses only. Times are evaluated in UTC.
 
 | Rule | Severity | Meaning |
@@ -36,5 +36,6 @@ Every finding has `rule_id`, `severity`, `user`, `source`, `reason`, and `eviden
 
 ```bash
 ruff check . && ruff format --check .
-pytest            # enforces --cov-fail-under=85
+pytest            # branch coverage, enforces --cov-fail-under=85
+mypy && bandit -r src && pip-audit --skip-editable
 ```

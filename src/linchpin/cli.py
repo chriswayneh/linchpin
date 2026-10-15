@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 
 from . import __version__
@@ -13,6 +13,21 @@ from .loader import LoadError, load_dir
 from .models import parse_ts
 from .output import RENDERERS
 from .rules import identity_findings, signal_findings
+
+
+def _int_min(minimum: int) -> Callable[[str], int]:
+    """argparse type: integer >= minimum (argparse equivalent of click.IntRange)."""
+
+    def parse(value: str) -> int:
+        try:
+            n = int(value)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"invalid integer: {value!r}") from None
+        if n < minimum:
+            raise argparse.ArgumentTypeError(f"must be >= {minimum}, got {n}")
+        return n
+
+    return parse
 
 
 def _common(p: argparse.ArgumentParser) -> None:
@@ -31,11 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     ident = sub.add_parser("identity", help="identity hygiene flags")
     _common(ident)
-    ident.add_argument("--stale-days", type=int, default=90)
+    ident.add_argument("--stale-days", type=_int_min(1), default=90)
     sig = sub.add_parser("signals", help="insider-risk signals")
     _common(sig)
-    sig.add_argument("--mass-threshold", type=int, default=10)
-    sig.add_argument("--leaver-window-days", type=int, default=30)
+    sig.add_argument("--mass-threshold", type=_int_min(1), default=10)
+    sig.add_argument("--leaver-window-days", type=_int_min(0), default=30)
     return parser
 
 

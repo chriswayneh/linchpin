@@ -82,7 +82,9 @@ def _iso(dt: datetime) -> str:
 
 def generate(seed: int = 42, users: int = 30, now: datetime = DEMO_NOW) -> dict[str, Any]:
     """Return ``{"entra": [...], "okta": [...], "crowd": [...], "bitbucket": {...}}``."""
-    rng = random.Random(seed)
+    # Reason for nosec: seeded PRNG generates reproducible fake demo data only;
+    # it is never used for secrets, tokens, or any security decision.
+    rng = random.Random(seed)  # nosec B311
     names: list[str] = []
     while len(names) < users:
         n = f"{rng.choice(FIRST)}.{rng.choice(LAST)}"

@@ -31,16 +31,19 @@ RULES = {
 def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     idx: dict[str, dict[str, Any]] = defaultdict(dict)
     for u in data["entra"]:
-        idx[norm_email(u.get("mail") or u.get("userPrincipalName"))]["entra"] = u
+        if email := norm_email(u.get("mail") or u.get("userPrincipalName")):
+            idx[email]["entra"] = u
     for u in data["okta"]:
-        idx[norm_email(u.get("email") or u.get("login"))]["okta"] = u
+        if email := norm_email(u.get("email") or u.get("login")):
+            idx[email]["okta"] = u
     return idx
 
 
 def _apps(data: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
     out = [("crowd", norm_email(u.get("email")), u) for u in data["crowd"]]
     out += [("bitbucket", norm_email(u.get("email")), u) for u in data["bitbucket"]["users"]]
-    return out
+    # Accounts with no email cannot be correlated; skip rather than match on "".
+    return [row for row in out if row[1]]
 
 
 def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90) -> list[Finding]:
@@ -157,7 +160,7 @@ def signal_findings(
         if ts and is_off_hours(ts):
             buckets[(norm_email(e.get("email")), ts.date().isoformat())].append(e)
     for (email, day), evs in sorted(buckets.items()):
-        repos = sorted({e.get("repo") for e in evs if e.get("repo")})
+        repos = _repos(evs)
         if len(repos) >= mass_threshold:
             findings.append(
                 Finding(
@@ -201,12 +204,17 @@ def signal_findings(
                     {
                         "entra.employeeLeaveDateTime": u["employeeLeaveDateTime"],
                         "events_after_leave": len(after),
-                        "repos": sorted({e.get("repo") for e in after}),
+                        "repos": _repos(after),
                         "last_event": max(e["timestamp"] for e in after),
                     },
                 )
             )
     return _sorted(findings)
+
+
+def _repos(events: list[dict[str, Any]]) -> list[str]:
+    """Distinct, sorted repo names; events with a missing/None/non-string repo are skipped."""
+    return sorted({r for e in events if isinstance(r := e.get("repo"), str) and r})
 
 
 def _sorted(findings: list[Finding]) -> list[Finding]:
