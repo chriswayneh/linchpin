@@ -6,13 +6,20 @@ All notable changes to this project are documented here. Format follows
 ## [0.1.1] - Unreleased
 
 ### Security (Red Team review)
-- Control-character checks now cover Unicode categories Cc and Cf: C1 controls
+- Control-character checks now cover Unicode categories Cc, Cf and Cs: C1 controls
   (U+0080–U+009F, including CSI U+009B), bidi overrides/isolates (U+202A–U+202E,
-  U+2066–U+2069) and zero-width characters. Identity fields containing them are rejected
-  (exit 2); table and CSV output strip them.
-- Invalid UTF-8, deeply nested JSON (RecursionError) and timestamps with extreme UTC
-  offsets (OverflowError) now raise a clear `LoadError` (exit 2) instead of a traceback.
-- Export files over 200 MB are refused before being read (exit 2).
+  U+2066–U+2069), zero-width characters and unpaired surrogates. Identity fields containing
+  them are rejected (exit 2) with the code point named, e.g. `contains U+200D`; table and CSV
+  output strip them.
+- Invalid UTF-8, deeply nested JSON (RecursionError), integer literals over Python's
+  int digit limit (ValueError) and timestamps with extreme UTC offsets (OverflowError) now
+  raise a clear `LoadError` (exit 2) instead of a traceback.
+- Exports must be regular files (directories and devices such as a symlink to `/dev/zero`
+  are refused). At most 200 MB + 1 byte is read, so oversized files are refused without
+  trusting `st_size`; read errors (OSError) exit 2.
+- `--now` values that overflow, or are too early for the stale/leaver window, are rejected
+  with exit 2.
+- Demo timestamps zero-pad years below 1000 so they round-trip through the parser.
 - CSV formula-injection guard ignores leading whitespace (e.g. `" =cmd"`).
 
 ### Added

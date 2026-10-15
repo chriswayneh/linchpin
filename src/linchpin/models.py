@@ -37,19 +37,23 @@ def norm_email(value: str | None) -> str:
     return (value or "").strip().lower()
 
 
-_CONTROL_CATEGORIES = frozenset({"Cc", "Cf"})
+_CONTROL_CATEGORIES = frozenset({"Cc", "Cf", "Cs"})
 
 
 def _is_control(ch: str) -> bool:
     """C0/C1 controls and DEL (Cc) plus format chars such as bidi overrides,
-    isolates and zero-width characters (Cf)."""
+    isolates and zero-width characters (Cf), and unpaired surrogates (Cs)."""
     return unicodedata.category(ch) in _CONTROL_CATEGORIES
 
 
+def first_control_char(value: str) -> str | None:
+    return next((c for c in value if _is_control(c)), None)
+
+
 def has_control_chars(value: str) -> bool:
-    return any(_is_control(c) for c in value)
+    return first_control_char(value) is not None
 
 
 def strip_control(value: str) -> str:
-    """Remove Unicode Cc and Cf characters (NUL, ESC, C1 incl. CSI, bidi overrides, ...)."""
+    """Remove Unicode Cc, Cf and Cs characters (NUL, ESC, C1 incl. CSI, bidi overrides, ...)."""
     return "".join(c for c in value if not _is_control(c))

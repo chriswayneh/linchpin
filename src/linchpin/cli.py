@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Callable, Sequence
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from . import __version__
 from .demo import DEMO_NOW, generate
@@ -61,8 +61,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--users must be between 7 and 300 (demo scenarios need >= 7)")
     try:
         now = parse_ts(args.now) if args.now else None
-    except ValueError:
+    except (ValueError, OverflowError):
         parser.error(f"invalid --now timestamp: {args.now!r}")
+    window = args.stale_days if args.command == "identity" else args.leaver_window_days
+    try:
+        (now or DEMO_NOW) - timedelta(days=window)
+    except OverflowError:
+        parser.error(f"--now is too early for a {window}-day window (or the window is too large)")
     try:
         if args.demo:
             now = now or DEMO_NOW

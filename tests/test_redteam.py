@@ -1,7 +1,6 @@
 """Red Team regression tests for v0.1.1 (written before the fixes)."""
 
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -72,25 +71,29 @@ def test_bad_inputs_exit_2(tmp_path, capsys):
     assert "entra.json" in capsys.readouterr().err
 
 
-# 3) refuse oversized files before reading
-def test_oversized_file_refused_without_reading(tmp_path, monkeypatch):
-    (tmp_path / "okta.json").write_text("[]")
-    real_stat = Path.stat
+# 3) refuse oversized files, reading at most MAX + 1 bytes
+# (replaces the v0.1.1 st_size-based test: QE asked not to trust st_size)
+def test_oversized_file_reads_at_most_cap_plus_one(tmp_path, monkeypatch):
+    monkeypatch.setattr(loader, "MAX_FILE_BYTES", 16)
+    (tmp_path / "okta.json").write_text("[" + " " * 1000 + "]")
+    sizes = []
+    real_open = Path.open
 
-    def fake_stat(self, *a, **kw):
-        st_ = real_stat(self, *a, **kw)
-        if self.name == "okta.json":
-            return os.stat_result((st_.st_mode, 0, 0, 0, 0, 0, 200 * 1024 * 1024 + 1, 0, 0, 0))
-        return st_
+    def spy_open(self, *a, **kw):
+        fh = real_open(self, *a, **kw)
+        real_read = fh.read
 
-    def no_read(*a, **kw):
-        raise AssertionError("file was read")
+        def read(n=-1):
+            sizes.append(n)
+            return real_read(n)
 
-    monkeypatch.setattr(Path, "stat", fake_stat)
-    monkeypatch.setattr(Path, "read_text", no_read)
-    monkeypatch.setattr(Path, "read_bytes", no_read)
-    with pytest.raises(LoadError, match="okta.json.*200 MB"):
+        fh.read = read
+        return fh
+
+    monkeypatch.setattr(Path, "open", spy_open)
+    with pytest.raises(LoadError, match="okta.json.*limit"):
         load_dir(tmp_path)
+    assert sizes == [17]
 
 
 def test_max_size_constant():
