@@ -113,9 +113,9 @@ flowchart LR
     output --> stdout["stdout"]
 ```
 
-| Module | Role | Imports from linchpin |
+| Module | Role | Imports (linchpin modules) |
 |---|---|---|
-| `cli.py` | Arguments, `--now` checks, runs commands, exit codes | demo, loader, models, output, rules |
+| `cli.py` | Arguments, `--now` checks, runs commands, exit codes | the other five |
 | `loader.py` | Reads and validates `--data` exports | `models` |
 | `demo.py` | Generates deterministic fake exports | (none) |
 | `models.py` | `Finding`, timestamp and email normalization, control-character helpers | (none) |
