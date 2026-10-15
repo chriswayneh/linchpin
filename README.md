@@ -35,12 +35,12 @@ built-in `--demo` data) and prints findings. It has no runtime dependencies.
 ## Try it
 
 ```bash
-pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.0
+pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.1
 linchpin identity --demo
 linchpin signals --demo
 ```
 
-Real output from v0.2.0.
+Real output from v0.2.1.
 Every row is shown; the REASON column and the per-finding evidence lines are omitted to fit
 the page (use `--format json` to see the evidence):
 
@@ -56,10 +56,12 @@ ID002    high      ben.adams@example.com         bitbucket
 ID002    high      ben.adams@example.com         crowd
 ID002    high      dev.adams@example.com         bitbucket
 ID002    high      dev.adams@example.com         crowd
+ID002    high      hugo.adams@example.com        bitbucket
+ID002    high      hugo.adams@example.com        crowd
 ID003    medium    dev.chen@example.com          crowd
 ID003    medium    sam.nguyen@example.com        okta
 ID005    medium    hugo.adams@example.com        okta
-11 finding(s).
+13 finding(s).
 
 $ linchpin signals --demo
 RULE_ID  SEVERITY  USER                      SOURCE
@@ -122,13 +124,18 @@ time.
 
 ### Input files
 
-With `--data DIR`, missing files are treated as empty. Users are correlated by normalized
+With `--data DIR`, missing files are treated as empty, so results for that source are
+incomplete: check that all four exports are present. Users are correlated by normalized
 (trimmed, lowercased) email: Entra `mail`, else `userPrincipalName`; Okta `email`, else `login`.
 Times are evaluated in UTC.
 
-**Duplicate identities:** if several records in one export normalize to the same email, the
-first record in file order is used for matching, and ID005 lists every duplicate record (its
-index and identifier fields) with `used_for_matching` set to the first index.
+**Duplicate identities:** if several records in one export normalize to the same email, ID005
+lists every duplicate record (its index and identifier fields) and `first_index`, the index of
+the first one in file order (informational only; it does not select a record for matching).
+ID002 checks every duplicate Entra/Okta record, so it fires if any of them is disabled,
+whatever the file order; its evidence lists every disabled value, deduplicated and sorted (for
+example `"okta.status": ["DEPROVISIONED", "SUSPENDED"]`). Findings are labeled with the
+identifier the source correlates on (Entra `mail`/`userPrincipalName`, Okta `email`/`login`).
 
 ### Output formats
 
