@@ -4,10 +4,12 @@ CLI-only, read-only identity review across Microsoft Entra ID, Okta, Atlassian C
 Bitbucket: correlates user exports by email and flags identity-hygiene and insider-risk
 signals. Every flag is explainable, with a rule id, a reason and the evidence fields behind it.
 
-[![CI][ci-badge]][ci] [![Python][py-badge]](pyproject.toml) [![Release][rel-badge]][rel]
+[![CI][ci-badge]][ci] [![License: MIT][lic-badge]](LICENSE) [![Python][py-badge]](pyproject.toml)
+[![Release][rel-badge]][rel]
 
 [ci-badge]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml/badge.svg?branch=main
 [ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
+[lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
 [rel-badge]: https://img.shields.io/badge/release-v0.1.1-blue.svg
 [rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.1
@@ -162,3 +164,7 @@ mypy && bandit -r src && pip-audit --skip-editable
 - [SECURITY.md](SECURITY.md): how to report a vulnerability
 - [CHANGELOG.md](CHANGELOG.md): release notes
 - [SPEC.md](SPEC.md): scope and principles
+
+## License
+
+MIT. See [LICENSE](LICENSE).
