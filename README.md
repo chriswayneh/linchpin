@@ -20,7 +20,8 @@ linchpin identity --data ./exports --format csv
 `--data DIR` reads `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json` (missing files
 are treated as empty; malformed entries, emails, or timestamps, and control characters in
 identity fields, exit with code 2). Users are correlated by normalized email. `--demo` data is
-seeded (`--seed`, `--users 7..300`) and uses `example.com` addresses only. Times are evaluated in UTC.
+seeded (`--seed`, `--users 7..300`) and uses `example.com` addresses only.
+Times are evaluated in UTC.
 
 | Rule | Severity | Meaning |
 |---|---|---|
