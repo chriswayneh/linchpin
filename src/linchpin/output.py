@@ -23,7 +23,8 @@ def _safe_cell(value: str) -> str:
     """Strip control characters (incl. NUL, which crashes csv on 3.10) and neutralise
     spreadsheet formula injection in CSV cells."""
     value = strip_control(value)
-    return "'" + value if value[:1] in ("=", "+", "-", "@") else value
+    # Spreadsheets ignore leading whitespace, so check the first non-space character.
+    return "'" + value if value.lstrip()[:1] in ("=", "+", "-", "@") else value
 
 
 def to_csv(findings: list[Finding]) -> str:

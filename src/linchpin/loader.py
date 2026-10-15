@@ -33,6 +33,9 @@ TIMESTAMP_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 
+MAX_FILE_BYTES = 200 * 1024 * 1024  # refuse exports over 200 MB before reading them
+
+
 class LoadError(Exception):
     """Raised when an export is missing or malformed."""
 
@@ -47,8 +50,15 @@ def load_dir(directory: str | Path) -> dict[str, Any]:
         if not path.exists():
             data[key] = {"users": [], "events": []} if key == "bitbucket" else []
             continue
+        size = path.stat().st_size
+        if size > MAX_FILE_BYTES:
+            raise LoadError(f"{path}: file is {size} bytes, over the 200 MB limit")
         try:
             data[key] = json.loads(path.read_text(encoding="utf-8"))
+        except UnicodeDecodeError as exc:
+            raise LoadError(f"{path}: not valid UTF-8 (byte offset {exc.start})") from exc
+        except RecursionError as exc:
+            raise LoadError(f"{path}: JSON is nested too deeply") from exc
         except json.JSONDecodeError as exc:
             raise LoadError(f"{path}: invalid JSON ({exc.msg} at line {exc.lineno})") from exc
     bb = data["bitbucket"]
@@ -98,7 +108,7 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
                 if not isinstance(value, str):
                     raise ValueError("not a string")
                 parse_ts(value)
-            except ValueError as exc:
+            except (ValueError, OverflowError) as exc:
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': invalid ISO-8601 timestamp {value!r}"
                 ) from exc

@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [0.1.1] - Unreleased
+
+### Security (Red Team review)
+- Control-character checks now cover Unicode categories Cc and Cf: C1 controls
+  (U+0080–U+009F, including CSI U+009B), bidi overrides/isolates (U+202A–U+202E,
+  U+2066–U+2069) and zero-width characters. Identity fields containing them are rejected
+  (exit 2); table and CSV output strip them.
+- Invalid UTF-8, deeply nested JSON (RecursionError) and timestamps with extreme UTC
+  offsets (OverflowError) now raise a clear `LoadError` (exit 2) instead of a traceback.
+- Export files over 200 MB are refused before being read (exit 2).
+- CSV formula-injection guard ignores leading whitespace (e.g. `" =cmd"`).
+
+### Added
+- `SECURITY.md` describing private vulnerability reporting.
+
 ## [0.1.0] - 2026-10-15
 
 ### Added
