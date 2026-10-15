@@ -11,8 +11,8 @@ signals. Every flag is explainable, with a rule id, a reason and the evidence fi
 [ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
 [lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
-[rel-badge]: https://img.shields.io/badge/release-v0.1.2-blue.svg
-[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.2
+[rel-badge]: https://img.shields.io/badge/release-v0.1.1-blue.svg
+[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.1
 
 linchpin never calls an identity provider or application. It reads exported JSON files (or
 built-in `--demo` data) and prints findings. It has no runtime dependencies.
@@ -85,8 +85,9 @@ Times are evaluated in UTC.
 | SIG001 | high | At least `--mass-threshold` distinct repos off-hours in one UTC day |
 | SIG002 | critical | Bitbucket activity after a recent leave date, up to `--now` |
 
-A null or missing Okta `status` (or Entra `accountEnabled`, Crowd/Bitbucket `active`) is treated
-as unknown: it never fires ID002 as disabled, and the account is still checked by ID003.
+A null or missing Okta `status` or Entra `accountEnabled` is treated as unknown: it never fires
+ID002 as disabled, and the account is still checked by ID003. A null or missing Crowd `active`
+also keeps the account in ID003 (ID003 covers Entra, Okta and Crowd only).
 
 Off-hours means a weekend, or outside 07:00–20:00 UTC. SIG002 fires only when the leave date is
 within `[now - window, now]` and the activity is after the leave date and not after `now`.

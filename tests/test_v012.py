@@ -156,5 +156,10 @@ def test_okta_suspended_still_fires_id002():
 
 def test_readme_badge_and_load_errors_mention_status():
     text = (ROOT / "README.md").read_text()
-    assert "release-v0.1.2" in text
+    # release badge is bumped at release time, not in the fix PR
+    assert "release-v0.1.1" in text
     assert "Okta `status`" in text
+    # ID003 covers only Entra, Okta and Crowd: docs must not claim Bitbucket here
+    assert "Crowd/Bitbucket `active`" not in text
+    changelog = (ROOT / "CHANGELOG.md").read_text().split("## [0.1.1]")[0]
+    assert "ID003 covers Entra, Okta and Crowd only" in changelog
