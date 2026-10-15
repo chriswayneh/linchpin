@@ -138,6 +138,7 @@ def test_security_md_wording():
     text = (ROOT / "SECURITY.md").read_text()
     assert "@chriswayneh" in text
     assert "public issue" in text.lower() or "do not open an issue" in text.lower()
-    assert "once the repository is public" in text
+    assert "once the repository is public" not in text
+    assert "private vulnerability reporting is turned on" in text
     assert "best effort" in text
     assert "5 business days" not in text

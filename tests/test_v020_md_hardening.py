@@ -112,7 +112,7 @@ def test_markdown_dev_extras_and_docs():
     assert '"cmarkgfm' in pyproject and "markdown-it-py[linkify]" in pyproject
     assert "markdown" in (ROOT / "SPEC.md").read_text().split("## Outputs")[1].split("##")[0]
     roadmap = (ROOT / "ROADMAP.md").read_text()
-    assert "(in progress, 0.2.0)" in roadmap
+    assert "(done, 0.2.0)" in roadmap and "in progress, 0.2.0" not in roadmap
     assert "autolink" in (ROOT / "README.md").read_text()
 
 

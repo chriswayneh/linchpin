@@ -4,18 +4,19 @@
 
 | Version | Supported |
 |---|---|
-| 0.1.x | Yes |
+| 0.2.x | Yes |
+| 0.1.x | No |
 
-Fixes are released on the latest 0.1.x version only.
+Fixes are released on the latest 0.2.x version only.
 
 ## Reporting a vulnerability
 
 Report vulnerabilities privately to the owner, @chriswayneh on GitHub. Never report a
 suspected vulnerability in a public issue, pull request or discussion.
 
-GitHub private vulnerability reporting (the **Report a vulnerability** form on the
-repository's **Security** tab) will be turned on once the repository is public, and will then
-be the preferred channel.
+GitHub private vulnerability reporting is turned on for this repository and is the
+preferred channel: use the **Report a vulnerability** form on the **Security** tab, or go
+directly to https://github.com/chriswayneh/linchpin/security/advisories/new.
 
 Include what you can of:
 - the affected version (`linchpin --version`) and command,

@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-10-15
 
 ### Added
 - ID005 (medium): duplicate identity. When several records in one export (Entra, Okta, Crowd

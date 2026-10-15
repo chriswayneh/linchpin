@@ -159,8 +159,17 @@ def test_markdown_property_one_row_per_finding(value):
 def test_version_020_docs():
     assert __version__ == "0.2.0"
     assert 'version = "0.2.0"' in (ROOT / "pyproject.toml").read_text()
-    assert "## [0.2.0] - Unreleased" in (ROOT / "CHANGELOG.md").read_text()
+    assert "## [0.2.0] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
     readme = (ROOT / "README.md").read_text()
+    assert "release-v0.2.0-blue" in readme and "releases/tag/v0.2.0" in readme
+    assert "linchpin.git@v0.2.0" in readme and "linchpin.git@main" not in readme
     assert "ID005" in readme and "markdown" in readme
+    security = (ROOT / "SECURITY.md").read_text()
+    assert "| 0.2.x | Yes |" in security and "| 0.1.x | No |" in security
+    assert "latest 0.1.x" not in security
+    assert "Fixes are released on the latest 0.2.x version only." in security
+    assert "private vulnerability reporting is turned on" in security
+    assert "https://github.com/chriswayneh/linchpin/security/advisories/new" in security
+    assert "once the repository is public" not in security
     roadmap = (ROOT / "ROADMAP.md").read_text()
     assert "last record wins silently" not in roadmap
