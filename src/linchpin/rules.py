@@ -46,10 +46,10 @@ def display_id(u: dict[str, Any]) -> str:
 def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     idx: dict[str, dict[str, Any]] = defaultdict(dict)
     for u in data["entra"]:
-        if email := norm_email(u.get("mail") or u.get("userPrincipalName")):
+        if email := norm_email(u.get("mail")) or norm_email(u.get("userPrincipalName")):
             idx[email]["entra"] = u
     for u in data["okta"]:
-        if email := norm_email(u.get("email") or u.get("login")):
+        if email := norm_email(u.get("email")) or norm_email(u.get("login")):
             idx[email]["okta"] = u
     return idx
 
@@ -167,13 +167,15 @@ def signal_findings(
     findings: list[Finding] = []
     events = data["bitbucket"]["events"]
 
-    buckets: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    buckets: dict[tuple[str, str], list[tuple[datetime, dict[str, Any]]]] = defaultdict(list)
     for e in events:
         ts = parse_ts(e.get("timestamp"))
         email = norm_email(e.get("email"))
         if email and ts and is_off_hours(ts):  # anonymous events are never merged
-            buckets[(email, ts.date().isoformat())].append(e)
-    for (email, day), evs in sorted(buckets.items()):
+            buckets[(email, ts.date().isoformat())].append((ts, e))
+    for (email, day), timed in sorted(buckets.items()):
+        timed.sort(key=lambda pair: pair[0])  # by parsed UTC time, not string order
+        evs = [e for _, e in timed]
         repos = _repos(evs)
         if len(repos) >= mass_threshold:
             findings.append(
@@ -188,8 +190,8 @@ def signal_findings(
                         "distinct_repos": len(repos),
                         "threshold": mass_threshold,
                         "repos": repos,
-                        "first": min(e["timestamp"] for e in evs),
-                        "last": max(e["timestamp"] for e in evs),
+                        "first": evs[0]["timestamp"],
+                        "last": evs[-1]["timestamp"],
                     },
                 )
             )
@@ -197,18 +199,21 @@ def signal_findings(
     window = now - timedelta(days=leaver_window_days)
     for u in data["entra"]:
         leave = parse_ts(u.get("employeeLeaveDateTime"))
-        if not leave or leave < window:
+        if not leave or not window <= leave <= now:  # future leave dates never fire
             continue
         email = norm_email(u.get("mail")) or norm_email(u.get("userPrincipalName"))
         if not email:  # an anonymous leaver must never match anonymous events
             continue
-        after = [
-            e
-            for e in events
-            if norm_email(e.get("email")) == email
-            and (ts := parse_ts(e.get("timestamp")))
-            and ts > leave
-        ]
+        after = sorted(
+            (
+                (ts, e)
+                for e in events
+                if norm_email(e.get("email")) == email
+                and (ts := parse_ts(e.get("timestamp")))
+                and leave < ts <= now
+            ),
+            key=lambda pair: pair[0],
+        )
         if after:
             findings.append(
                 Finding(
@@ -220,8 +225,8 @@ def signal_findings(
                     {
                         "entra.employeeLeaveDateTime": u["employeeLeaveDateTime"],
                         "events_after_leave": len(after),
-                        "repos": _repos(after),
-                        "last_event": max(e["timestamp"] for e in after),
+                        "repos": _repos([e for _, e in after]),
+                        "last_event": after[-1][1]["timestamp"],
                     },
                 )
             )

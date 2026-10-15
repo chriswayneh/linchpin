@@ -28,5 +28,11 @@ All notable changes to this project are documented here. Format follows
   never matches a leaver without an email, so no SIG finding has an empty user.
 - Non-string email/identity fields in exports raise a clear error (exit 2).
 - CSV output strips control characters (NUL crashed the csv writer on Python 3.10).
+- IdP correlation normalizes before choosing: a blank/whitespace `mail` (Entra) or `email`
+  (Okta) falls back to `userPrincipalName` / `login` instead of dropping the account.
+- SIG002 fires only for leave dates within `[now - window, now]` and events strictly after
+  the leave date and not after `now`; future leave dates or events never fire.
+- SIG001 `first`/`last` and SIG002 `last_event` are chosen by parsed UTC time, not string
+  order, so mixed UTC offsets are reported correctly.
 - Control characters in identity fields are rejected on load (exit 2); table output also
   strips them as defense against terminal escape injection.

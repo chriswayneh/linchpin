@@ -106,11 +106,9 @@ def test_csv_roundtrip_property(value):
     assert cell[:1] not in ("=", "+", "-", "@")
 
 
-# D) README lines <= 100 chars
-def test_readme_line_length():
-    long = [
-        i
-        for i, line in enumerate((ROOT / "README.md").read_text().splitlines(), 1)
-        if len(line) > 100
-    ]
+# D) README and ROADMAP lines <= 100 chars
+@pytest.mark.parametrize("doc", ["README.md", "ROADMAP.md"])
+def test_doc_line_length(doc):
+    lines = (ROOT / doc).read_text().splitlines()
+    long = [i for i, line in enumerate(lines, 1) if len(line) > 100]
     assert long == []
