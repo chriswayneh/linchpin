@@ -35,13 +35,14 @@ built-in `--demo` data) and prints findings. It has no runtime dependencies.
 ## Try it
 
 ```bash
-pip install git+https://github.com/chriswayneh/linchpin.git@v0.1.2
+pip install git+https://github.com/chriswayneh/linchpin.git@main
 linchpin identity --demo
 linchpin signals --demo
 ```
 
-Real output from v0.1.2. Every row is shown; the REASON column and the per-finding evidence
-lines are omitted to fit the page (use `--format json` to see the evidence):
+Real output from `main` (0.2.0, unreleased; at release the install pin moves to `@v0.2.0`).
+Every row is shown; the REASON column and the per-finding evidence lines are omitted to fit
+the page (use `--format json` to see the evidence):
 
 ```text
 $ linchpin identity --demo
@@ -57,7 +58,8 @@ ID002    high      dev.adams@example.com         bitbucket
 ID002    high      dev.adams@example.com         crowd
 ID003    medium    dev.chen@example.com          crowd
 ID003    medium    sam.nguyen@example.com        okta
-10 finding(s).
+ID005    medium    hugo.adams@example.com        okta
+11 finding(s).
 
 $ linchpin signals --demo
 RULE_ID  SEVERITY  USER                      SOURCE
@@ -93,7 +95,7 @@ linchpin identity --data ./exports --format csv > identity.csv
 
 | Command | What it does |
 |---|---|
-| `identity` | Identity hygiene: rules ID001 to ID004 |
+| `identity` | Identity hygiene: rules ID001 to ID005 |
 | `signals` | Insider-risk signals: rules SIG001 and SIG002 |
 
 ### Flags for both commands
@@ -105,7 +107,7 @@ linchpin identity --data ./exports --format csv > identity.csv
 | `--seed N` | `42` | Demo RNG seed; same seed gives the same data |
 | `--users N` | `30` | Demo user count, 7 to 300 |
 | `--now TS` | demo epoch or current UTC | Reference time (ISO-8601) for all windows |
-| `--format` | `table` | `table`, `json` or `csv` |
+| `--format` | `table` | `table`, `json`, `csv` or `markdown` |
 
 The demo epoch is `2026-10-01T15:00:00Z`. With `--data`, `--now` defaults to the current UTC
 time.
@@ -124,6 +126,19 @@ With `--data DIR`, missing files are treated as empty. Users are correlated by n
 (trimmed, lowercased) email: Entra `mail`, else `userPrincipalName`; Okta `email`, else `login`.
 Times are evaluated in UTC.
 
+**Duplicate identities:** if several records in one export normalize to the same email, the
+first record in file order is used for matching, and ID005 lists every duplicate record (its
+index and identifier fields) with `used_for_matching` set to the first index.
+
+### Output formats
+
+`table` (default), `json`, `csv`, and `markdown`: a report with summary counts by severity and
+by rule, then a findings table. In Markdown output, control characters and Unicode line
+separators are removed, `&`, `<` and `>` become HTML entities, Markdown syntax characters
+(including `|`) are backslash-escaped, and `:`, `.`, `/` and `@` are written as character
+references (with an invisible word joiner) so GitHub and linkify renderers create no autolinks,
+links or images.
+
 ## Rules
 
 | Rule | Severity | Meaning |
@@ -132,6 +147,7 @@ Times are evaluated in UTC.
 | ID002 | high | Disabled in Entra / non-ACTIVE in Okta but active in Crowd/Bitbucket |
 | ID003 | medium | Active Entra/Okta/Crowd account with no login in `--stale-days` |
 | ID004 | critical | Entra privileged or Okta admin without MFA |
+| ID005 | medium | Several records in one export share a normalized email (duplicate identity) |
 | SIG001 | high | At least `--mass-threshold` distinct repos off-hours in one UTC day |
 | SIG002 | critical | Bitbucket activity after a recent leave date, up to `--now` |
 
@@ -162,7 +178,7 @@ flowchart LR
     demo --> data
     data --> rules["rules.py<br/>identity_findings / signal_findings"]
     rules --> findings(("sorted Findings"))
-    findings --> output["output.py<br/>table / json / csv"]
+    findings --> output["output.py<br/>table / json / csv / markdown"]
     output --> stdout(["stdout"])
     models["models.py<br/>Finding, parse_ts, norm_email,<br/>control-char helpers"]
     models -.-> cli
@@ -177,8 +193,8 @@ flowchart LR
 | `loader.py` | Reads and validates `--data` exports | `models` |
 | `demo.py` | Generates deterministic fake exports | (none) |
 | `models.py` | `Finding`, timestamp and email normalization, control-character helpers | (none) |
-| `rules.py` | The six detection rules | `models` |
-| `output.py` | Renders findings as table, JSON or CSV | `models` |
+| `rules.py` | The seven detection rules | `models` |
+| `output.py` | Renders findings as table, JSON, CSV or Markdown | `models` |
 
 ## Exit codes
 
@@ -196,10 +212,11 @@ Errors are one line on stderr, without a traceback.
 
 ## Hardening
 
-- **Control characters:** identity fields containing Unicode Cc, Cf or Cs characters (C0/C1
-  controls including CSI, bidi overrides and isolates, zero-width characters, unpaired
-  surrogates) are rejected on load, and the error names the code point (e.g. `U+200D`), never
-  the raw character. Table and CSV output strip the same categories.
+- **Control characters:** identity fields containing Unicode Cc, Cf, Cs, Zl or Zp characters
+  (C0/C1 controls including CSI, bidi overrides and isolates, zero-width characters, unpaired
+  surrogates, U+2028/U+2029 line separators) are rejected on load, and the error names the code
+  point (e.g. `U+200D`), never the raw character. Table, CSV and Markdown output strip the same
+  categories.
 - **Bounded reads:** each export must be a regular file (`is_file()`), so directories and
   devices such as a symlink to `/dev/zero` are refused. At most 200 MB + 1 byte is read, so
   the cap does not trust `st_size`.

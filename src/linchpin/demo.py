@@ -166,6 +166,9 @@ def generate(seed: int = 42, users: int = 30, now: datetime = DEMO_NOW) -> dict[
     # 3. stale logins
     crowd[3]["lastAuthenticated"] = _iso(now - timedelta(days=200))
     okta[4]["lastLogin"] = _iso(now - timedelta(days=120))
+    # 3b. duplicate identity: a second Okta record for the same person (ID005); the first
+    #     (ACTIVE) record is the one used for matching.
+    okta.append({**okta[7], "login": okta[7]["login"].upper(), "status": "STAGED"})
     # 4. recent leaver who is still active after leave date
     leave = now - timedelta(days=10)
     entra[5].update(employeeLeaveDateTime=_iso(leave), accountEnabled=False)

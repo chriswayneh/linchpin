@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [0.2.0] - Unreleased
+
+### Added
+- ID005 (medium): duplicate identity. When several records in one export (Entra, Okta, Crowd
+  or Bitbucket users) normalize to the same email, one finding lists every duplicate record
+  (index and identifier/status fields) and `used_for_matching`.
+- `--format markdown`: a report with summary counts by severity and by rule, then a findings
+  table. Cells strip control characters and line separators, entity-escape `&`, `<`, `>`,
+  backslash-escape Markdown syntax including `|`, and write `:`, `.`, `/`, `@` as character
+  references so GFM and linkify renderers produce no autolinks, links or images.
+- Demo data includes a duplicate Okta record so ID005 appears in `identity --demo`.
+
+### Changed
+- U+2028/U+2029 (Unicode line/paragraph separators, Zl/Zp) are treated as control characters:
+  rejected in identity fields and stripped from all output formats.
+- Duplicate policy: the first record in file order is used for Entra/Okta matching (was a
+  silent last-record-wins). This can change ID002 results for exports with duplicates.
+- ROADMAP: v0.2 is the duplicate-identity and Markdown work; later phases renumbered (real
+  exports v0.3, correlation v0.4, rules config v0.5, CI gating v0.6, reporting v0.7).
+
 ## [0.1.2] - 2026-10-15
 
 ### Fixed

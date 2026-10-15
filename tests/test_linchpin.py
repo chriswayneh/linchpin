@@ -39,7 +39,7 @@ def test_demo_has_all_sources_and_no_real_domains():
 
 def test_demo_triggers_every_rule():
     d = generate()
-    assert rule_ids(identity_findings(d, DEMO_NOW)) == {"ID001", "ID002", "ID003", "ID004"}
+    assert rule_ids(identity_findings(d, DEMO_NOW)) == {"ID001", "ID002", "ID003", "ID004", "ID005"}
     assert rule_ids(signal_findings(d, DEMO_NOW)) == {"SIG001", "SIG002"}
 
 
