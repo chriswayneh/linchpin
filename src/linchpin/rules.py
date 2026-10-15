@@ -34,7 +34,8 @@ NO_EMAIL = "(no email)"
 def display_id(u: dict[str, Any]) -> str:
     """Best identifier for a finding: email, else login/name/username, else ``(no email)``."""
     for key in ("email", "mail", "userPrincipalName"):
-        if email := norm_email(u.get(key)):
+        value = u.get(key)
+        if isinstance(value, str) and (email := norm_email(value)):
             return email
     for key in ("login", "name", "username"):
         value = u.get(key)
@@ -84,7 +85,9 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
         disabled: dict[str, Any] = {}
         if "entra" in rec and rec["entra"].get("accountEnabled") is False:
             disabled["entra.accountEnabled"] = False
-        if "okta" in rec and rec["okta"].get("status", "ACTIVE") != "ACTIVE":
+        # A null or missing Okta status is unknown, not disabled.
+        okta_status = rec.get("okta", {}).get("status")
+        if okta_status is not None and okta_status != "ACTIVE":
             disabled["okta.status"] = rec["okta"]["status"]
         if disabled:
             findings.append(
@@ -106,7 +109,8 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
     ]
     for source, ts_field, active_field, active_val in stale_fields:
         for u in data[source]:
-            if u.get(active_field, active_val) != active_val:
+            state = u.get(active_field)
+            if state is not None and state != active_val:  # null/missing = unknown, still checked
                 continue
             last = parse_ts(u.get(ts_field))
             if last is None or last < cutoff:

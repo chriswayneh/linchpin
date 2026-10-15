@@ -85,6 +85,10 @@ Times are evaluated in UTC.
 | SIG001 | high | At least `--mass-threshold` distinct repos off-hours in one UTC day |
 | SIG002 | critical | Bitbucket activity after a recent leave date, up to `--now` |
 
+A null or missing Okta `status` or Entra `accountEnabled` is treated as unknown: it never fires
+ID002 as disabled, and the account is still checked by ID003. A null or missing Crowd `active`
+also keeps the account in ID003 (ID003 covers Entra, Okta and Crowd only).
+
 Off-hours means a weekend, or outside 07:00–20:00 UTC. SIG002 fires only when the leave date is
 within `[now - window, now]` and the activity is after the leave date and not after `now`.
 
@@ -134,7 +138,9 @@ flowchart LR
 
 Load errors include a missing data directory, a non-regular file, a file over 200 MB, unreadable
 files, invalid UTF-8 or JSON, nesting too deep, malformed entries, non-string or control-character
-identity fields, and invalid timestamps. Errors are one line on stderr, without a traceback.
+identity fields, an Okta `status` that is not a string, non-boolean MFA/privilege/active flags,
+and invalid timestamps. Email syntax is not validated.
+Errors are one line on stderr, without a traceback.
 
 ## Hardening
 

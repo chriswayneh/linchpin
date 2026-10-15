@@ -16,12 +16,33 @@ FILES = {
 }
 
 
+# Every identifier the rules may read (matching and display_id), in every section, must be a
+# string without control characters, so rules never see a non-string identifier.
+_ALL_IDS = ("email", "mail", "userPrincipalName", "login", "name", "username")
 IDENTITY_FIELDS: dict[str, tuple[str, ...]] = {
-    "entra": ("mail", "userPrincipalName"),
-    "okta": ("email", "login"),
-    "crowd": ("email", "name"),
-    "bitbucket.users": ("email", "username"),
-    "bitbucket.events": ("email",),
+    "entra": _ALL_IDS,
+    "okta": _ALL_IDS,
+    "crowd": _ALL_IDS,
+    "bitbucket.users": _ALL_IDS,
+    "bitbucket.events": _ALL_IDS,
+}
+
+# Other string fields the rules read: same string + control-character checks.
+STRING_FIELDS: dict[str, tuple[str, ...]] = {
+    "entra": (),
+    "okta": ("status",),
+    "crowd": (),
+    "bitbucket.users": (),
+    "bitbucket.events": (),
+}
+
+# Flags the rules test for truthiness must be real JSON booleans ("false" is truthy).
+BOOL_FIELDS: dict[str, tuple[str, ...]] = {
+    "entra": ("accountEnabled", "isPrivileged", "mfaRegistered"),
+    "okta": ("isAdmin", "mfaEnrolled"),
+    "crowd": ("active",),
+    "bitbucket.users": ("active",),
+    "bitbucket.events": (),
 }
 
 TIMESTAMP_FIELDS: dict[str, tuple[str, ...]] = {
@@ -54,6 +75,8 @@ def load_dir(directory: str | Path) -> dict[str, Any]:
             data[key] = json.loads(_read_capped(path).decode("utf-8"))
         except UnicodeDecodeError as exc:
             raise LoadError(f"{path}: not valid UTF-8 (byte offset {exc.start})") from exc
+        except UnicodeError as exc:
+            raise LoadError(f"{path}: not valid UTF-8 ({exc})") from exc
         except RecursionError as exc:
             raise LoadError(f"{path}: JSON is nested too deeply") from exc
         except json.JSONDecodeError as exc:
@@ -107,7 +130,7 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
     for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             raise LoadError(f"{fname}: {label} [{i}] must be a JSON object")
-        for field in IDENTITY_FIELDS[section]:
+        for field in IDENTITY_FIELDS[section] + STRING_FIELDS[section]:
             if entry.get(field) is not None and not isinstance(entry[field], str):
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': expected a string, "
@@ -117,6 +140,12 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': contains U+{ord(bad):04X} "
                     "(control character)"
+                )
+        for field in BOOL_FIELDS[section]:
+            if entry.get(field) is not None and not isinstance(entry[field], bool):
+                raise LoadError(
+                    f"{fname}: {label} [{i}] field '{field}': expected a JSON boolean, "
+                    f"got {type(entry[field]).__name__}"
                 )
         for field in TIMESTAMP_FIELDS[section]:
             value = entry.get(field)
