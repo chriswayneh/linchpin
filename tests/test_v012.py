@@ -112,7 +112,7 @@ def test_generic_unicode_error_is_loaderror(tmp_path, monkeypatch):
 def test_version_012():
     assert __version__ == "0.1.2"
     assert 'version = "0.1.2"' in (ROOT / "pyproject.toml").read_text()
-    assert "## [0.1.2] - Unreleased" in (ROOT / "CHANGELOG.md").read_text()
+    assert "## [0.1.2] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
 
 
 # QE: Okta status must be a string or null; null/missing means unknown
@@ -156,8 +156,8 @@ def test_okta_suspended_still_fires_id002():
 
 def test_readme_badge_and_load_errors_mention_status():
     text = (ROOT / "README.md").read_text()
-    # release badge is bumped at release time, not in the fix PR
-    assert "release-v0.1.1" in text
+    # release badge matches the current version (bumped at release time)
+    assert f"release-v{__version__}" in text
     assert "Okta `status`" in text
     # ID003 covers only Entra, Okta and Crowd: docs must not claim Bitbucket here
     assert "Crowd/Bitbucket `active`" not in text

@@ -11,8 +11,8 @@ signals. Every flag is explainable, with a rule id, a reason and the evidence fi
 [ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
 [lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
-[rel-badge]: https://img.shields.io/badge/release-v0.1.1-blue.svg
-[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.1
+[rel-badge]: https://img.shields.io/badge/release-v0.1.2-blue.svg
+[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.1.2
 
 linchpin never calls an identity provider or application. It reads exported JSON files (or
 built-in `--demo` data) and prints findings. It has no runtime dependencies.
