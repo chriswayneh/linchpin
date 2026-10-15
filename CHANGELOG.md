@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [0.1.2] - Unreleased
+## [0.1.2] - 2026-10-15
 
 ### Fixed
 - MFA, privilege, enabled and active flags (`mfaRegistered`, `isPrivileged`, `accountEnabled`,
