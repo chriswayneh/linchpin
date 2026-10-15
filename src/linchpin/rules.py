@@ -23,6 +23,7 @@ RULES = {
     "ID002": "Disabled in IdP but still active in an app",
     "ID003": "Stale login: no authentication within the stale window",
     "ID004": "Privileged account without MFA",
+    "ID005": "Duplicate identity: several records in one export share a normalized email",
     "SIG001": "Off-hours mass repository access",
     "SIG002": "Activity by a recent leaver after their leave date",
 }
@@ -44,15 +45,81 @@ def display_id(u: dict[str, Any]) -> str:
     return NO_EMAIL
 
 
+def _match_key(source: str, u: dict[str, Any]) -> str:
+    """Normalized email used to correlate a record ("" when it has none)."""
+    if source == "entra":
+        return norm_email(u.get("mail")) or norm_email(u.get("userPrincipalName"))
+    if source == "okta":
+        return norm_email(u.get("email")) or norm_email(u.get("login"))
+    return norm_email(u.get("email"))
+
+
+def _records(data: dict[str, Any], source: str) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = (
+        data["bitbucket"]["users"] if source == "bitbucket" else data[source]
+    )
+    return records
+
+
 def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Index Entra and Okta records by normalized email.
+
+    Duplicate policy: the FIRST record in file order is used for matching; later duplicates
+    are ignored for correlation and reported by ID005.
+    """
     idx: dict[str, dict[str, Any]] = defaultdict(dict)
-    for u in data["entra"]:
-        if email := norm_email(u.get("mail")) or norm_email(u.get("userPrincipalName")):
-            idx[email]["entra"] = u
-    for u in data["okta"]:
-        if email := norm_email(u.get("email")) or norm_email(u.get("login")):
-            idx[email]["okta"] = u
+    for source in ("entra", "okta"):
+        for u in data[source]:
+            if (email := _match_key(source, u)) and source not in idx[email]:
+                idx[email][source] = u
     return idx
+
+
+_DUP_EVIDENCE_FIELDS = (
+    "email",
+    "mail",
+    "userPrincipalName",
+    "login",
+    "name",
+    "username",
+    "status",
+    "accountEnabled",
+    "active",
+)
+
+
+def _duplicate_findings(data: dict[str, Any]) -> list[Finding]:
+    findings: list[Finding] = []
+    for source in ("entra", "okta", "crowd", "bitbucket"):
+        groups: dict[str, list[int]] = defaultdict(list)
+        for i, u in enumerate(_records(data, source)):
+            if key := _match_key(source, u):
+                groups[key].append(i)
+        for email, indexes in groups.items():
+            if len(indexes) < 2:
+                continue
+            records = [
+                {
+                    "index": i,
+                    **{
+                        k: _records(data, source)[i][k]
+                        for k in _DUP_EVIDENCE_FIELDS
+                        if k in _records(data, source)[i]
+                    },
+                }
+                for i in indexes
+            ]
+            findings.append(
+                Finding(
+                    "ID005",
+                    "medium",
+                    email,
+                    source,
+                    RULES["ID005"],
+                    {"count": len(indexes), "used_for_matching": indexes[0], "records": records},
+                )
+            )
+    return findings
 
 
 def _apps(data: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
@@ -63,7 +130,7 @@ def _apps(data: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
 
 
 def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90) -> list[Finding]:
-    findings: list[Finding] = []
+    findings: list[Finding] = _duplicate_findings(data)
     idp = _idp_index(data)
 
     for source, email, u in _apps(data):

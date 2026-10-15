@@ -60,4 +60,45 @@ def to_table(findings: list[Finding]) -> str:
     return "\n".join(out)
 
 
-RENDERERS = {"table": to_table, "json": to_json, "csv": to_csv}
+_SEVERITIES = ("critical", "high", "medium", "low")
+_MD_ESCAPE = {c: "\\" + c for c in "\\`*_[]|~"}
+
+
+def _md_cell(value: object) -> str:
+    """Make text safe inside a Markdown table cell.
+
+    Control characters (incl. newlines) are stripped, HTML is entity-escaped (no raw tags),
+    and Markdown syntax characters, including the ``|`` cell separator, are backslash-escaped.
+    """
+    text = strip_control(str(value))
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return "".join(_MD_ESCAPE.get(c, c) for c in text)
+
+
+def to_markdown(findings: list[Finding]) -> str:
+    out = ["# linchpin report", "", "## Summary", ""]
+    if not findings:
+        out.append("No findings.")
+        return "\n".join(out) + "\n"
+    out.append(f"{len(findings)} finding(s).")
+    out += ["", "| Severity | Count |", "|---|---|"]
+    for sev in _SEVERITIES:
+        if n := sum(1 for f in findings if f.severity == sev):
+            out.append(f"| {sev} | {n} |")
+    out += ["", "| Rule | Count |", "|---|---|"]
+    for rule in sorted({f.rule_id for f in findings}):
+        out.append(f"| {_md_cell(rule)} | {sum(1 for f in findings if f.rule_id == rule)} |")
+    out += [
+        "",
+        "## Findings",
+        "",
+        "| Rule | Severity | User | Source | Reason | Evidence |",
+        "|---|---|---|---|---|---|",
+    ]
+    for f in findings:
+        cells = (f.rule_id, f.severity, f.user, f.source, f.reason, _evidence_str(f))
+        out.append("| " + " | ".join(_md_cell(c) for c in cells) + " |")
+    return "\n".join(out) + "\n"
+
+
+RENDERERS = {"table": to_table, "json": to_json, "csv": to_csv, "markdown": to_markdown}

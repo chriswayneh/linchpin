@@ -1,6 +1,7 @@
 """v0.1.2 regression tests for Codex findings (written before the fixes)."""
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,6 +14,10 @@ from linchpin.rules import display_id, identity_findings
 NOW = datetime(2026, 10, 1, tzinfo=timezone.utc)
 ROOT = Path(__file__).resolve().parents[1]
 RECENT = "2026-09-30T00:00:00Z"
+
+
+def changelog_text():
+    return (ROOT / "CHANGELOG.md").read_text()
 
 
 def write(tmp_path, name, payload):
@@ -110,8 +115,8 @@ def test_generic_unicode_error_is_loaderror(tmp_path, monkeypatch):
 
 # version / changelog
 def test_version_012():
-    assert __version__ == "0.1.2"
-    assert 'version = "0.1.2"' in (ROOT / "pyproject.toml").read_text()
+    # exact version is pinned by the current release's test; keep the 0.1.2 entry check
+    assert f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text()
     assert "## [0.1.2] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
 
 
@@ -156,8 +161,10 @@ def test_okta_suspended_still_fires_id002():
 
 def test_readme_badge_and_load_errors_mention_status():
     text = (ROOT / "README.md").read_text()
-    # release badge matches the current version (bumped at release time)
-    assert f"release-v{__version__}" in text
+    # release badge shows the latest released (dated) CHANGELOG version; bumped at release time
+    released = re.search(r"^## \[(\d+\.\d+\.\d+)\] - \d{4}-", changelog_text(), re.M)
+    assert released is not None
+    assert f"release-v{released.group(1)}" in text
     assert "Okta `status`" in text
     # ID003 covers only Entra, Okta and Crowd: docs must not claim Bitbucket here
     assert "Crowd/Bitbucket `active`" not in text

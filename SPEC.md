@@ -26,7 +26,7 @@ and flag identity-hygiene and insider-risk signals for IAM / security teams.
 `--format table` (default), `json`, `csv`.
 
 ## Exit codes
-- `0`: success, with or without findings (finding-based gating is planned for v0.5).
+- `0`: success, with or without findings (finding-based gating is planned for v0.6).
 - `2`: usage errors (bad arguments or flag values, invalid or too early `--now`) and load errors
   (unreadable, oversized or malformed exports).
 - `1`: only on an unexpected crash (uncaught exception); never returned on purpose.

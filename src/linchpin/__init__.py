@@ -1,3 +1,3 @@
 """linchpin: explainable identity hygiene and insider-risk signals."""
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
