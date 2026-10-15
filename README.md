@@ -18,9 +18,9 @@ linchpin identity --data ./exports --format csv
 ```
 
 `--data DIR` reads `entra.json`, `okta.json`, `crowd.json`, `bitbucket.json` (missing files
-are treated as empty; malformed entries, emails, or timestamps exit with code 2). Users are
-correlated by normalized email. `--demo` data is seeded (`--seed`, `--users 7..300`) and uses
-`example.com` addresses only. Times are evaluated in UTC.
+are treated as empty; malformed entries, emails, or timestamps, and control characters in
+identity fields, exit with code 2). Users are correlated by normalized email. `--demo` data is
+seeded (`--seed`, `--users 7..300`) and uses `example.com` addresses only. Times are evaluated in UTC.
 
 | Rule | Severity | Meaning |
 |---|---|---|
@@ -32,7 +32,9 @@ correlated by normalized email. `--demo` data is seeded (`--seed`, `--users 7..3
 | SIG002 | critical | Bitbucket activity after a leave date within `--leaver-window-days` (30) |
 
 Off-hours means a weekend, or outside 07:00–20:00 UTC.
-Findings for accounts without an email use login, name, or username, else `(no email)`.
+Identity findings for accounts without an email use the lowercased login, name, or username,
+else `(no email)`. Signals skip events and leavers with no email, so no SIG row has an empty
+user.
 
 Every finding has `rule_id`, `severity`, `user`, `source`, `reason`, and `evidence`.
 

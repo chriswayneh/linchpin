@@ -81,3 +81,19 @@ def test_sig002_last_event_by_parsed_time_mixed_offsets():
         "2026-09-29T03:00:00Z",
     )
     assert f.evidence["last_event"] == "2026-09-28T23:00:00-05:00"
+
+
+def test_sig002_whitespace_mail_falls_back_to_upn():
+    d = empty()
+    d["entra"] = [
+        {
+            "mail": "   ",
+            "userPrincipalName": "l@X.com",
+            "employeeLeaveDateTime": "2026-09-25T00:00:00Z",
+        }
+    ]
+    d["bitbucket"]["events"] = [
+        {"email": "l@x.com", "timestamp": "2026-09-26T10:00:00Z", "repo": "proj/a"}
+    ]
+    fs = [f for f in signal_findings(d, NOW) if f.rule_id == "SIG002"]
+    assert [f.user for f in fs] == ["l@x.com"]
