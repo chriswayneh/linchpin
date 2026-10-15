@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .models import has_control_chars, parse_ts
+from .models import first_control_char, parse_ts
 
 FILES = {
     "entra": "entra.json",
@@ -33,6 +33,9 @@ TIMESTAMP_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 
+MAX_FILE_BYTES = 200 * 1024 * 1024  # refuse exports over 200 MB before reading them
+
+
 class LoadError(Exception):
     """Raised when an export is missing or malformed."""
 
@@ -48,9 +51,15 @@ def load_dir(directory: str | Path) -> dict[str, Any]:
             data[key] = {"users": [], "events": []} if key == "bitbucket" else []
             continue
         try:
-            data[key] = json.loads(path.read_text(encoding="utf-8"))
+            data[key] = json.loads(_read_capped(path).decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise LoadError(f"{path}: not valid UTF-8 (byte offset {exc.start})") from exc
+        except RecursionError as exc:
+            raise LoadError(f"{path}: JSON is nested too deeply") from exc
         except json.JSONDecodeError as exc:
             raise LoadError(f"{path}: invalid JSON ({exc.msg} at line {exc.lineno})") from exc
+        except ValueError as exc:  # e.g. integer literal over the int max-str-digits limit
+            raise LoadError(f"{path}: invalid JSON value ({exc})") from exc
     bb = data["bitbucket"]
     if not isinstance(bb, dict):
         raise LoadError("bitbucket.json must be an object with 'users' and 'events'")
@@ -74,6 +83,24 @@ def load_dir(directory: str | Path) -> dict[str, Any]:
     return data
 
 
+def _read_capped(path: Path) -> bytes:
+    """Read a regular file, refusing anything over MAX_FILE_BYTES.
+
+    st_size is not trusted: at most MAX_FILE_BYTES + 1 bytes are read and the length checked.
+    Non-regular files (directories, devices such as /dev/zero via symlink) are refused.
+    """
+    if not path.is_file():
+        raise LoadError(f"{path}: not a regular file")
+    try:
+        with path.open("rb") as fh:
+            raw = fh.read(MAX_FILE_BYTES + 1)
+    except OSError as exc:
+        raise LoadError(f"{path}: cannot read ({exc.strerror or exc})") from exc
+    if len(raw) > MAX_FILE_BYTES:
+        raise LoadError(f"{path}: file is over the {MAX_FILE_BYTES} byte limit")
+    return raw
+
+
 def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
     """Every entry must be an object and every known timestamp field must parse."""
     label = section.split(".", 1)[1] if "." in section else "entry"
@@ -86,9 +113,10 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
                     f"{fname}: {label} [{i}] field '{field}': expected a string, "
                     f"got {type(entry[field]).__name__}"
                 )
-            if isinstance(entry.get(field), str) and has_control_chars(entry[field]):
+            if isinstance(entry.get(field), str) and (bad := first_control_char(entry[field])):
                 raise LoadError(
-                    f"{fname}: {label} [{i}] field '{field}': contains control characters"
+                    f"{fname}: {label} [{i}] field '{field}': contains U+{ord(bad):04X} "
+                    "(control character)"
                 )
         for field in TIMESTAMP_FIELDS[section]:
             value = entry.get(field)
@@ -98,7 +126,7 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
                 if not isinstance(value, str):
                     raise ValueError("not a string")
                 parse_ts(value)
-            except ValueError as exc:
+            except (ValueError, OverflowError) as exc:
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': invalid ISO-8601 timestamp {value!r}"
                 ) from exc

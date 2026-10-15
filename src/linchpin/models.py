@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -36,13 +37,23 @@ def norm_email(value: str | None) -> str:
     return (value or "").strip().lower()
 
 
-CONTROL_CHARS = {c: None for c in range(32)} | {127: None}
+_CONTROL_CATEGORIES = frozenset({"Cc", "Cf", "Cs"})
+
+
+def _is_control(ch: str) -> bool:
+    """C0/C1 controls and DEL (Cc) plus format chars such as bidi overrides,
+    isolates and zero-width characters (Cf), and unpaired surrogates (Cs)."""
+    return unicodedata.category(ch) in _CONTROL_CATEGORIES
+
+
+def first_control_char(value: str) -> str | None:
+    return next((c for c in value if _is_control(c)), None)
 
 
 def has_control_chars(value: str) -> bool:
-    return any(ord(c) < 32 or ord(c) == 127 for c in value)
+    return first_control_char(value) is not None
 
 
 def strip_control(value: str) -> str:
-    """Remove C0 control characters and DEL (NUL, ESC, CR, LF, ...)."""
-    return value.translate(CONTROL_CHARS)
+    """Remove Unicode Cc, Cf and Cs characters (NUL, ESC, C1 incl. CSI, bidi overrides, ...)."""
+    return "".join(c for c in value if not _is_control(c))

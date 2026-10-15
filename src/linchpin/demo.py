@@ -77,7 +77,8 @@ REPOS = [
 
 
 def _iso(dt: datetime) -> str:
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # isoformat zero-pads the year (strftime %Y does not on Linux for years < 1000).
+    return dt.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def generate(seed: int = 42, users: int = 30, now: datetime = DEMO_NOW) -> dict[str, Any]:
