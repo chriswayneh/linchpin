@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [0.1.1] - Unreleased
+## [0.1.1] - 2026-10-15
 
 ### Security (Red Team review)
 - Control-character checks now cover Unicode categories Cc, Cf and Cs: C1 controls
