@@ -77,10 +77,10 @@ def test_oversized_file_reads_at_most_cap_plus_one(tmp_path, monkeypatch):
     monkeypatch.setattr(loader, "MAX_FILE_BYTES", 16)
     (tmp_path / "okta.json").write_text("[" + " " * 1000 + "]")
     sizes = []
-    real_open = Path.open
+    real_fdopen = loader.os.fdopen
 
-    def spy_open(self, *a, **kw):
-        fh = real_open(self, *a, **kw)
+    def spy_open(fd, *a, **kw):  # loader opens via os.open + os.fdopen (v0.2.1)
+        fh = real_fdopen(fd, *a, **kw)
         real_read = fh.read
 
         def read(n=-1):
@@ -90,7 +90,7 @@ def test_oversized_file_reads_at_most_cap_plus_one(tmp_path, monkeypatch):
         fh.read = read
         return fh
 
-    monkeypatch.setattr(Path, "open", spy_open)
+    monkeypatch.setattr(loader.os, "fdopen", spy_open)
     with pytest.raises(LoadError, match="okta.json.*limit"):
         load_dir(tmp_path)
     assert sizes == [17]

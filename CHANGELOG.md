@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
+## [0.2.1] - Unreleased
+
+### Fixed
+- ID002: a duplicate Entra/Okta record can no longer hide a disabled account. Every duplicate is
+  checked and ID002 fires if any is disabled, whatever the file order (0.2.0 used only the
+  first record). The demo now shows ID002 for the duplicate Okta user.
+- SIG001 ignores events after `--now`, matching SIG002.
+- ID003/ID004 findings are labeled with the identifier the source correlates on (Entra
+  `mail`/`userPrincipalName`, Okta `email`/`login`), not a stray `email` field.
+- Table output caps column padding at 60 characters; one long value no longer pads every row
+  (longer values are shown in full, never truncated).
+- SIG002 indexes events by email once instead of scanning all events per leaver.
+- Loader re-checks the opened file descriptor (non-blocking open + fstat), so a path swapped
+  for a FIFO after the `is_file()` check is refused instead of blocking.
+
+### Docs
+- README: duplicate policy updated; missing export files make results incomplete.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from linchpin import cli, loader
+from linchpin import loader as loader_mod
 from linchpin.loader import LoadError, load_dir
 from linchpin.models import Finding, has_control_chars, strip_control
 from linchpin.output import to_csv, to_table
@@ -100,7 +101,7 @@ def test_oserror_is_loaderror(tmp_path, monkeypatch, capsys):
     def boom(*a, **kw):
         raise PermissionError(13, "Permission denied")
 
-    monkeypatch.setattr(Path, "open", boom)
+    monkeypatch.setattr(loader_mod.os, "open", boom)  # loader opens via os.open (v0.2.1)
     with pytest.raises(LoadError, match="entra.json.*Permission denied"):
         load_dir(tmp_path)
     assert cli.main(["identity", "--data", str(tmp_path)]) == 2

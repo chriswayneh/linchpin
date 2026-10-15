@@ -8,6 +8,9 @@ import json
 
 from .models import Finding, strip_control
 
+# Table columns pad to at most this many characters; longer values overflow (never truncated).
+TABLE_MAX_WIDTH = 60
+
 COLUMNS = ["rule_id", "severity", "user", "source", "reason", "evidence"]
 
 
@@ -50,7 +53,7 @@ def to_table(findings: list[Finding]) -> str:
         for f in findings
     ]
     head = COLUMNS[:5]
-    widths = [max(len(head[i]), *(len(r[i]) for r in rows)) for i in range(5)]
+    widths = [max(len(head[i]), *(min(len(r[i]), TABLE_MAX_WIDTH) for r in rows)) for i in range(5)]
     line = "  ".join(h.upper().ljust(w) for h, w in zip(head, widths, strict=True))
     out = [line, "  ".join("-" * w for w in widths)]
     for f, r in zip(findings, rows, strict=True):

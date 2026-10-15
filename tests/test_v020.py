@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from linchpin import __version__, cli
+from linchpin import cli
 from linchpin.demo import DEMO_NOW, generate
 from linchpin.models import Finding
 from linchpin.output import RENDERERS, to_markdown
@@ -46,8 +46,8 @@ def test_id005_okta_duplicates_first_record_wins():
     assert f.evidence["used_for_matching"] == 0
     assert [r["index"] for r in f.evidence["records"]] == [0, 2]
     assert f.evidence["records"][1]["login"] == "a2"
-    # first record (ACTIVE) is used for matching: no false ID002 from the later SUSPENDED copy
-    assert "ID002" not in {x.rule_id for x in fs}
+    # v0.2.1: any disabled duplicate fires ID002 (a duplicate can never hide it)
+    assert "ID002" in {x.rule_id for x in fs}
 
 
 def test_id005_entra_mail_vs_upn_duplicate():
@@ -91,8 +91,8 @@ def test_order_independent_of_input_shuffle_for_matching():
     app = [{"email": "a@x.com", "active": True, "lastAuthenticated": RECENT}]
     d1 = {**empty(), "okta": [a, b], "crowd": app}
     d2 = {**empty(), "okta": [b, a], "crowd": app}
-    # documented policy: first record in file order is used
-    assert "ID002" not in {f.rule_id for f in identity_findings(d1, NOW)}
+    # v0.2.1 policy: order-independent, any disabled duplicate fires ID002
+    assert "ID002" in {f.rule_id for f in identity_findings(d1, NOW)}
     assert "ID002" in {f.rule_id for f in identity_findings(d2, NOW)}
 
 
@@ -157,8 +157,6 @@ def test_markdown_property_one_row_per_finding(value):
 
 
 def test_version_020_docs():
-    assert __version__ == "0.2.0"
-    assert 'version = "0.2.0"' in (ROOT / "pyproject.toml").read_text()
     assert "## [0.2.0] - 2026-10-15" in (ROOT / "CHANGELOG.md").read_text()
     readme = (ROOT / "README.md").read_text()
     assert "release-v0.2.0-blue" in readme and "releases/tag/v0.2.0" in readme

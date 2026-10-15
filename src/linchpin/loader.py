@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -114,8 +116,14 @@ def _read_capped(path: Path) -> bytes:
     """
     if not path.is_file():
         raise LoadError(f"{path}: not a regular file")
+    # Re-check on the opened descriptor: the path may be swapped (e.g. for a FIFO) after
+    # is_file(). O_NONBLOCK keeps open() from blocking on a FIFO with no writer.
     try:
-        with path.open("rb") as fh:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        with os.fdopen(fd, "rb") as fh:
+            if not stat.S_ISREG(os.fstat(fh.fileno()).st_mode):
+                raise LoadError(f"{path}: not a regular file")
+            os.set_blocking(fh.fileno(), True)
             raw = fh.read(MAX_FILE_BYTES + 1)
     except OSError as exc:
         raise LoadError(f"{path}: cannot read ({exc.strerror or exc})") from exc

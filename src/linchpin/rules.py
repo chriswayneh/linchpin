@@ -32,8 +32,15 @@ RULES = {
 NO_EMAIL = "(no email)"
 
 
-def display_id(u: dict[str, Any]) -> str:
-    """Best identifier for a finding: email, else login/name/username, else ``(no email)``."""
+def display_id(u: dict[str, Any], source: str | None = None) -> str:
+    """Best identifier for a finding, else ``(no email)``.
+
+    With ``source``, the record's correlation key (see ``_match_key``) comes first, so a finding
+    is labeled with the same identity it is matched on. Then email/mail/UPN, then
+    login/name/username.
+    """
+    if source is not None and (key := _match_key(source, u)):
+        return key
     for key in ("email", "mail", "userPrincipalName"):
         value = u.get(key)
         if isinstance(value, str) and (email := norm_email(value)):
@@ -61,17 +68,18 @@ def _records(data: dict[str, Any], source: str) -> list[dict[str, Any]]:
     return records
 
 
-def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Index Entra and Okta records by normalized email.
+def _idp_index(data: dict[str, Any]) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    """Index every Entra and Okta record by normalized email, in file order.
 
-    Duplicate policy: the FIRST record in file order is used for matching; later duplicates
-    are ignored for correlation and reported by ID005.
+    Duplicate policy: all duplicate records are kept, so ID002 fires when ANY of them is
+    disabled (order-independent; a duplicate can never hide a disabled account). ID005 reports
+    the duplicates.
     """
-    idx: dict[str, dict[str, Any]] = defaultdict(dict)
+    idx: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
     for source in ("entra", "okta"):
         for u in data[source]:
-            if (email := _match_key(source, u)) and source not in idx[email]:
-                idx[email][source] = u
+            if email := _match_key(source, u):
+                idx[email][source].append(u)
     return idx
 
 
@@ -150,12 +158,16 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
             )
             continue
         disabled: dict[str, Any] = {}
-        if "entra" in rec and rec["entra"].get("accountEnabled") is False:
+        if any(r.get("accountEnabled") is False for r in rec.get("entra", [])):
             disabled["entra.accountEnabled"] = False
         # A null or missing Okta status is unknown, not disabled.
-        okta_status = rec.get("okta", {}).get("status")
-        if okta_status is not None and okta_status != "ACTIVE":
-            disabled["okta.status"] = rec["okta"]["status"]
+        okta_bad = [
+            st
+            for r in rec.get("okta", [])
+            if (st := r.get("status")) is not None and st != "ACTIVE"
+        ]
+        if okta_bad:
+            disabled["okta.status"] = okta_bad[0]
         if disabled:
             findings.append(
                 Finding(
@@ -181,7 +193,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
                 continue
             last = parse_ts(u.get(ts_field))
             if last is None or last < cutoff:
-                email = display_id(u)
+                email = display_id(u, source)
                 days = None if last is None else (now - last).days
                 findings.append(
                     Finding(
@@ -200,7 +212,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
 
     for u in data["entra"]:
         if u.get("isPrivileged") and not u.get("mfaRegistered"):
-            email = display_id(u)
+            email = display_id(u, "entra")
             findings.append(
                 Finding(
                     "ID004",
@@ -213,7 +225,7 @@ def identity_findings(data: dict[str, Any], now: datetime, stale_days: int = 90)
             )
     for u in data["okta"]:
         if u.get("isAdmin") and not u.get("mfaEnrolled"):
-            email = display_id(u)
+            email = display_id(u, "okta")
             findings.append(
                 Finding(
                     "ID004",
@@ -242,7 +254,8 @@ def signal_findings(
     for e in events:
         ts = parse_ts(e.get("timestamp"))
         email = norm_email(e.get("email"))
-        if email and ts and is_off_hours(ts):  # anonymous events are never merged
+        # anonymous events are never merged; events after --now never count
+        if email and ts and ts <= now and is_off_hours(ts):
             buckets[(email, ts.date().isoformat())].append((ts, e))
     for (email, day), timed in sorted(buckets.items()):
         timed.sort(key=lambda pair: pair[0])  # by parsed UTC time, not string order
@@ -267,6 +280,12 @@ def signal_findings(
                 )
             )
 
+    # Index timed events by normalized email once: O(events + leavers), not O(events x leavers).
+    by_email: dict[str, list[tuple[datetime, dict[str, Any]]]] = defaultdict(list)
+    for e in events:
+        if (key := norm_email(e.get("email"))) and (ts := parse_ts(e.get("timestamp"))):
+            by_email[key].append((ts, e))
+
     window = now - timedelta(days=leaver_window_days)
     for u in data["entra"]:
         leave = parse_ts(u.get("employeeLeaveDateTime"))
@@ -276,13 +295,7 @@ def signal_findings(
         if not email:  # an anonymous leaver must never match anonymous events
             continue
         after = sorted(
-            (
-                (ts, e)
-                for e in events
-                if norm_email(e.get("email")) == email
-                and (ts := parse_ts(e.get("timestamp")))
-                and leave < ts <= now
-            ),
+            ((ts, e) for ts, e in by_email.get(email, []) if leave < ts <= now),
             key=lambda pair: pair[0],
         )
         if after:
