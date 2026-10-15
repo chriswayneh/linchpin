@@ -23,6 +23,10 @@ All notable changes to this project are documented here. Format follows
 - mypy error in repo collection fixed via `isinstance` narrowing.
 - `--stale-days` and `--mass-threshold` must be >= 1; `--leaver-window-days` >= 0.
 - Accounts with empty emails are no longer correlated with each other; their ID003/ID004
-  findings show login, name, or username instead, else `(no email)`.
+  findings show the lowercased login, name, or username instead, else `(no email)`.
+  Signals skip anonymous data: SIG001 never merges events without an email, and SIG002
+  never matches a leaver without an email, so no SIG finding has an empty user.
 - Non-string email/identity fields in exports raise a clear error (exit 2).
 - CSV output strips control characters (NUL crashed the csv writer on Python 3.10).
+- Control characters in identity fields are rejected on load (exit 2); table output also
+  strips them as defense against terminal escape injection.

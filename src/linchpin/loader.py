@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .models import parse_ts
+from .models import has_control_chars, parse_ts
 
 FILES = {
     "entra": "entra.json",
@@ -85,6 +85,10 @@ def _validate_entries(fname: str, section: str, entries: list[Any]) -> None:
                 raise LoadError(
                     f"{fname}: {label} [{i}] field '{field}': expected a string, "
                     f"got {type(entry[field]).__name__}"
+                )
+            if isinstance(entry.get(field), str) and has_control_chars(entry[field]):
+                raise LoadError(
+                    f"{fname}: {label} [{i}] field '{field}': contains control characters"
                 )
         for field in TIMESTAMP_FIELDS[section]:
             value = entry.get(field)

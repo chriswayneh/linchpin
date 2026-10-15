@@ -6,7 +6,7 @@ import csv
 import io
 import json
 
-from .models import Finding
+from .models import Finding, strip_control
 
 COLUMNS = ["rule_id", "severity", "user", "source", "reason", "evidence"]
 
@@ -19,13 +19,10 @@ def to_json(findings: list[Finding]) -> str:
     return json.dumps([f.to_dict() for f in findings], indent=2, sort_keys=True)
 
 
-_CONTROL = {c: None for c in range(32)} | {127: None}
-
-
 def _safe_cell(value: str) -> str:
     """Strip control characters (incl. NUL, which crashes csv on 3.10) and neutralise
     spreadsheet formula injection in CSV cells."""
-    value = value.translate(_CONTROL)
+    value = strip_control(value)
     return "'" + value if value[:1] in ("=", "+", "-", "@") else value
 
 
@@ -46,14 +43,18 @@ def to_csv(findings: list[Finding]) -> str:
 def to_table(findings: list[Finding]) -> str:
     if not findings:
         return "No findings."
-    rows = [[f.rule_id, f.severity, f.user, f.source, f.reason] for f in findings]
+    # Defense in depth: never write raw control chars (terminal escape injection).
+    rows = [
+        [strip_control(str(c)) for c in (f.rule_id, f.severity, f.user, f.source, f.reason)]
+        for f in findings
+    ]
     head = COLUMNS[:5]
     widths = [max(len(head[i]), *(len(r[i]) for r in rows)) for i in range(5)]
     line = "  ".join(h.upper().ljust(w) for h, w in zip(head, widths, strict=True))
     out = [line, "  ".join("-" * w for w in widths)]
     for f, r in zip(findings, rows, strict=True):
         out.append("  ".join(c.ljust(w) for c, w in zip(r, widths, strict=True)).rstrip())
-        out.append(f"    evidence: {_evidence_str(f)}")
+        out.append(f"    evidence: {strip_control(_evidence_str(f))}")
     out.append(f"\n{len(findings)} finding(s).")
     return "\n".join(out)
 

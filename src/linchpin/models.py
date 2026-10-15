@@ -34,3 +34,15 @@ def parse_ts(value: str | None) -> datetime | None:
 
 def norm_email(value: str | None) -> str:
     return (value or "").strip().lower()
+
+
+CONTROL_CHARS = {c: None for c in range(32)} | {127: None}
+
+
+def has_control_chars(value: str) -> bool:
+    return any(ord(c) < 32 or ord(c) == 127 for c in value)
+
+
+def strip_control(value: str) -> str:
+    """Remove C0 control characters and DEL (NUL, ESC, CR, LF, ...)."""
+    return value.translate(CONTROL_CHARS)

@@ -38,8 +38,8 @@ def display_id(u: dict[str, Any]) -> str:
             return email
     for key in ("login", "name", "username"):
         value = u.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+        if ident := norm_email(value if isinstance(value, str) else None):
+            return ident  # lowercased, matching how identities are compared
     return NO_EMAIL
 
 
@@ -170,8 +170,9 @@ def signal_findings(
     buckets: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for e in events:
         ts = parse_ts(e.get("timestamp"))
-        if ts and is_off_hours(ts):
-            buckets[(norm_email(e.get("email")), ts.date().isoformat())].append(e)
+        email = norm_email(e.get("email"))
+        if email and ts and is_off_hours(ts):  # anonymous events are never merged
+            buckets[(email, ts.date().isoformat())].append(e)
     for (email, day), evs in sorted(buckets.items()):
         repos = _repos(evs)
         if len(repos) >= mass_threshold:
@@ -198,7 +199,9 @@ def signal_findings(
         leave = parse_ts(u.get("employeeLeaveDateTime"))
         if not leave or leave < window:
             continue
-        email = norm_email(u.get("mail") or u.get("userPrincipalName"))
+        email = norm_email(u.get("mail")) or norm_email(u.get("userPrincipalName"))
+        if not email:  # an anonymous leaver must never match anonymous events
+            continue
         after = [
             e
             for e in events
