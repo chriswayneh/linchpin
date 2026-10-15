@@ -60,7 +60,7 @@ def test_id005_entra_mail_vs_upn_duplicate():
     fs = identity_findings(d, NOW)
     [f] = [x for x in fs if x.rule_id == "ID005"]
     assert f.source == "entra" and f.evidence["first_index"] == 0
-    # first (disabled) record is used -> ID002 fires deterministically
+    # ID002 fires because one duplicate record is disabled (accountEnabled False), in any order
     assert "ID002" in {x.rule_id for x in fs}
 
 

@@ -214,3 +214,15 @@ def test_version_021_docs():
     assert "`first_index`" in changelog
     demo_src = (root / "src" / "linchpin" / "demo.py").read_text()
     assert "used for matching" not in demo_src
+
+
+# 1c) the sort is real: with many distinct statuses a set's iteration order differs from sorted
+def test_id002_okta_status_list_is_sorted_full_set():
+    statuses = ["SUSPENDED", "DEPROVISIONED", "STAGED", "LOCKED_OUT", "PROVISIONED", "RECOVERY"]
+    d = empty()
+    d["okta"] = [{"email": "a@x.com", "status": st} for st in statuses]
+    d["crowd"] = [{"email": "a@x.com", "active": True}]
+    [f] = [x for x in identity_findings(d, NOW) if x.rule_id == "ID002"]
+    got = f.evidence["okta.status"]
+    assert got == sorted(got)
+    assert got == sorted(statuses)
