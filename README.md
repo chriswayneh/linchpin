@@ -35,26 +35,28 @@ built-in `--demo` data) and prints findings. It has no runtime dependencies.
 ## Try it
 
 ```bash
-pip install git+https://github.com/chriswayneh/linchpin.git
+pip install git+https://github.com/chriswayneh/linchpin.git@v0.1.2
 linchpin identity --demo
 linchpin signals --demo
 ```
 
-Real output from v0.1.2, trimmed (the REASON column and long evidence lines are cut, and `...`
-marks omitted rows):
+Real output from v0.1.2. Every row is shown; the REASON column and the per-finding evidence
+lines are omitted to fit the page (use `--format json` to see the evidence):
 
 ```text
 $ linchpin identity --demo
 RULE_ID  SEVERITY  USER                          SOURCE
 -------  --------  ----------------------------  ---------
 ID004    critical  hugo.evans@example.com        okta
-    evidence: {"okta.isAdmin":true,"okta.mfaEnrolled":false}
+ID004    critical  isla.hughes@example.com       entra
 ID001    high      contractor.old@example.com    bitbucket
+ID001    high      svc.legacy-build@example.com  crowd
 ID002    high      ben.adams@example.com         bitbucket
-    evidence: {"bitbucket.active":true,"entra.accountEnabled":false}
+ID002    high      ben.adams@example.com         crowd
+ID002    high      dev.adams@example.com         bitbucket
+ID002    high      dev.adams@example.com         crowd
 ID003    medium    dev.chen@example.com          crowd
-    evidence: {"crowd.lastAuthenticated":"2026-03-15T15:00:00Z","days_since":200,"stale_days":90}
-...
+ID003    medium    sam.nguyen@example.com        okta
 10 finding(s).
 
 $ linchpin signals --demo
@@ -62,7 +64,6 @@ RULE_ID  SEVERITY  USER                      SOURCE
 -------  --------  ------------------------  ---------
 SIG002   critical  ben.adams@example.com     bitbucket
 SIG001   high      chloe.garcia@example.com  bitbucket
-...
 2 finding(s).
 ```
 
