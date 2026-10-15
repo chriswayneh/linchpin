@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
 
-## [0.2.1] - Unreleased
+## [0.2.1] - 2026-10-15
 
 ### Fixed
 - ID002: a duplicate Entra/Okta record can no longer hide a disabled account. Every duplicate is

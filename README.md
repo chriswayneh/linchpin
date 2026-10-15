@@ -10,8 +10,8 @@ Bitbucket, and explains every finding.**
 [ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
 [lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
-[rel-badge]: https://img.shields.io/badge/release-v0.2.0-blue.svg
-[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.2.0
+[rel-badge]: https://img.shields.io/badge/release-v0.2.1-blue.svg
+[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.2.1
 
 ## The problem
 

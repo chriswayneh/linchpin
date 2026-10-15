@@ -199,9 +199,12 @@ def test_version_021_docs():
     root = Path(__file__).resolve().parents[1]
     assert __version__ == "0.2.1"
     assert 'version = "0.2.1"' in (root / "pyproject.toml").read_text()
-    assert "## [0.2.1] - Unreleased" in (root / "CHANGELOG.md").read_text()
+    assert "## [0.2.1] - 2026-10-15" in (root / "CHANGELOG.md").read_text()
+    assert "Unreleased" not in (root / "CHANGELOG.md").read_text()
     readme = (root / "README.md").read_text()
     assert "fires if any of them is" in readme and "incomplete" in readme
+    assert "release-v0.2.1-blue" in readme and "releases/tag/v0.2.1" in readme
+    assert "release-v0.2.0" not in readme and "releases/tag/v0.2.0" not in readme
     assert "Real output from v0.2.1." in readme and "Real output from v0.2.0" not in readme
     assert "linchpin.git@v0.2.1" in readme and "linchpin.git@v0.2.0" not in readme
     assert "linchpin.git@main" not in readme

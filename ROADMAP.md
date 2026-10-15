@@ -6,7 +6,7 @@ Each phase lists its theme and scope.
 `identity` + `signals` commands, `--demo` seeded data across Entra/Okta/Crowd/Bitbucket,
 explainable flags, table/JSON/CSV output, pytest ≥85% coverage, ruff.
 
-## v0.2: Duplicate identities and Markdown reports (done, 0.2.0)
+## v0.2: Duplicate identities and Markdown reports (done, 0.2.0 to 0.2.1)
 ID005 duplicate-identity policy: several records with the same normalized email in one
 provider export are reported with evidence (in 0.2.0 the first record in file order was used for
 matching). `--format markdown` reports: summary counts by severity and rule plus a safely
