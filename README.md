@@ -1,8 +1,14 @@
 # linchpin
 
-[![CI](https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+[![CI][ci-badge]][ci] [![License: MIT][lic-badge]](LICENSE) [![Python][py-badge]](pyproject.toml)
+[![Release][rel-badge]][rel]
+
+[ci-badge]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml/badge.svg?branch=main
+[ci]: https://github.com/chriswayneh/linchpin/actions/workflows/ci.yml
+[lic-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[py-badge]: https://img.shields.io/badge/python-3.10%2B-blue.svg
+[rel-badge]: https://img.shields.io/badge/release-v0.2.1-blue.svg
+[rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.2.1
 
 **A read-only CLI that finds identity drift across Entra ID, Okta, Atlassian Crowd and
 Bitbucket, and explains every finding.**
@@ -232,11 +238,13 @@ flowchart LR
 - Grok Bot (confirmed by Chris, 2026-10-21)
 - Cursor cloud agents (confirmed by Chris, 2026-10-21)
 
-Commits made with AI help carry a `Co-authored-by` trailer from now on. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Commits made with AI help carry a `Co-authored-by` trailer from now on. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for planned phases and [CHANGELOG.md](CHANGELOG.md) for released versions.
+See [ROADMAP.md](ROADMAP.md) for planned phases and [CHANGELOG.md](CHANGELOG.md) for released
+versions.
 
 ## Security
 
@@ -265,4 +273,5 @@ MIT. See [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-README layout adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template) by Othneil Drew.
+README layout adapted from
+[Best-README-Template](https://github.com/othneildrew/Best-README-Template) by Othneil Drew.
