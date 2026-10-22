@@ -1,8 +1,5 @@
 # linchpin
 
-**A read-only CLI that finds identity drift across Entra ID, Okta, Atlassian Crowd and
-Bitbucket, and explains every finding.**
-
 [![CI][ci-badge]][ci] [![License: MIT][lic-badge]](LICENSE) [![Python][py-badge]](pyproject.toml)
 [![Release][rel-badge]][rel]
 
@@ -13,27 +10,12 @@ Bitbucket, and explains every finding.**
 [rel-badge]: https://img.shields.io/badge/release-v0.2.1-blue.svg
 [rel]: https://github.com/chriswayneh/linchpin/releases/tag/v0.2.1
 
-## The problem
+**A read-only CLI that finds identity drift across Entra ID, Okta, Atlassian Crowd and
+Bitbucket, and explains every finding.**
 
-Each system has its own copy of your users, and they drift apart:
+## Quick start
 
-- **Leavers still active in apps:** disabled in Entra or Okta, still enabled in Crowd or
-  Bitbucket, sometimes still cloning repos after their leave date.
-- **Privileged users without MFA:** Entra privileged roles or Okta admins with no MFA enrolled.
-- **Stale and orphaned accounts:** no login in months, or app accounts with no identity
-  provider record at all.
-
-linchpin correlates the four exports by email and flags these cases. Each finding has a rule
-id, a severity, a reason and the exact evidence fields behind it.
-
-**Who it's for:** IAM and security engineers, auditors who need explainable evidence, and
-platform teams who own Atlassian and Bitbucket access.
-
-linchpin never calls an identity provider or application. It reads exported JSON files (or
-built-in `--demo` data) and prints findings. It has no runtime dependencies.
-
-## Try it
-
+### Try it
 ```bash
 pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.1
 linchpin identity --demo
@@ -74,8 +56,7 @@ SIG001   high      chloe.garcia@example.com  bitbucket
 `--demo` uses seeded fake users on `example.com` across all four sources, so no tenant or
 export is needed. The same seed always gives the same output.
 
-## Install
-
+### Install
 ```bash
 git clone https://github.com/chriswayneh/linchpin.git
 cd linchpin
@@ -85,22 +66,49 @@ linchpin --version
 
 Requires Python 3.10 or newer.
 
-## Quick start
-
 ```bash
 linchpin identity --demo                 # identity hygiene, table output
 linchpin signals --demo --format json    # insider-risk signals as JSON
 linchpin identity --data ./exports --format csv > identity.csv
 ```
 
-## Commands
+### Development
+```bash
+pip install -e '.[dev]'
+ruff check . && ruff format --check .
+pytest            # branch coverage, enforces --cov-fail-under=85
+mypy && bandit -r src && pip-audit --skip-editable
+```
 
+## Features
+
+### The problem
+Each system has its own copy of your users, and they drift apart:
+
+- **Leavers still active in apps:** disabled in Entra or Okta, still enabled in Crowd or
+  Bitbucket, sometimes still cloning repos after their leave date.
+- **Privileged users without MFA:** Entra privileged roles or Okta admins with no MFA enrolled.
+- **Stale and orphaned accounts:** no login in months, or app accounts with no identity
+  provider record at all.
+
+linchpin correlates the four exports by email and flags these cases. Each finding has a rule
+id, a severity, a reason and the exact evidence fields behind it.
+
+**Who it's for:** IAM and security engineers, auditors who need explainable evidence, and
+platform teams who own Atlassian and Bitbucket access.
+
+linchpin never calls an identity provider or application. It reads exported JSON files (or
+built-in `--demo` data) and prints findings. It has no runtime dependencies.
+
+## Usage
+
+### Commands
 | Command | What it does |
 |---|---|
 | `identity` | Identity hygiene: rules ID001 to ID005 |
 | `signals` | Insider-risk signals: rules SIG001 and SIG002 |
 
-### Flags for both commands
+#### Flags for both commands
 
 | Flag | Default | Meaning |
 |---|---|---|
@@ -114,7 +122,7 @@ linchpin identity --data ./exports --format csv > identity.csv
 The demo epoch is `2026-10-01T15:00:00Z`. With `--data`, `--now` defaults to the current UTC
 time.
 
-### Command-specific flags
+#### Command-specific flags
 
 | Command | Flag | Default | Meaning |
 |---|---|---|---|
@@ -122,7 +130,7 @@ time.
 | `signals` | `--mass-threshold N` | `10` | SIG001 distinct repos per off-hours day, at least 1 |
 | `signals` | `--leaver-window-days N` | `30` | SIG002 look-back for leave dates, at least 0 |
 
-### Input files
+#### Input files
 
 With `--data DIR`, missing files are treated as empty, so results for that source are
 incomplete: check that all four exports are present. Users are correlated by normalized
@@ -137,7 +145,7 @@ whatever the file order; its evidence lists every disabled value, deduplicated a
 example `"okta.status": ["DEPROVISIONED", "SUSPENDED"]`). Findings are labeled with the
 identifier the source correlates on (Entra `mail`/`userPrincipalName`, Okta `email`/`login`).
 
-### Output formats
+#### Output formats
 
 `table` (default), `json`, `csv`, and `markdown`: a report with summary counts by severity and
 by rule, then a findings table. In Markdown output, control characters and Unicode line
@@ -146,8 +154,7 @@ separators are removed, `&`, `<` and `>` become HTML entities, Markdown syntax c
 references (with an invisible word joiner) so GitHub and linkify renderers create no autolinks,
 links or images.
 
-## Rules
-
+### Rules
 | Rule | Severity | Meaning |
 |---|---|---|
 | ID001 | high | Active Crowd/Bitbucket account with no Entra or Okta identity (orphan) |
@@ -162,13 +169,32 @@ A null or missing Okta `status` or Entra `accountEnabled` is treated as unknown:
 ID002 as disabled, and the account is still checked by ID003. A null or missing Crowd `active`
 also keeps the account in ID003 (ID003 covers Entra, Okta and Crowd only).
 
-Off-hours means a weekend, or outside 07:00–20:00 UTC. SIG002 fires only when the leave date is
+Off-hours means a weekend, or outside 07:00-20:00 UTC. SIG002 fires only when the leave date is
 within `[now - window, now]` and the activity is after the leave date and not after `now`.
 
 Every finding has `rule_id`, `severity`, `user`, `source`, `reason` and `evidence`.
 Identity findings for accounts without an email use the lowercased login, name or username,
 else `(no email)`. Signals skip events and leavers with no email, so no SIG row has an empty
 user.
+
+### Exit codes
+| Code | Meaning |
+|---|---|
+| 0 | Success, with or without findings |
+| 1 | Not used on purpose: only an unexpected internal error (uncaught exception) |
+| 2 | Usage error (bad arguments, out-of-range flags, bad or too early `--now`), or a load error |
+
+Load errors include a missing data directory, a non-regular file, a file over 200 MB, unreadable
+files, invalid UTF-8 or JSON, nesting too deep, malformed entries, non-string or control-character
+identity fields, an Okta `status` that is not a string, non-boolean MFA/privilege/active flags,
+and invalid timestamps. Email syntax is not validated.
+Errors are one line on stderr, without a traceback.
+
+### More
+- [ROADMAP.md](ROADMAP.md): phases v0.1 to v1.0
+- [SECURITY.md](SECURITY.md): how to report a vulnerability
+- [CHANGELOG.md](CHANGELOG.md): release notes
+- [SPEC.md](SPEC.md): scope and principles
 
 ## Architecture
 
@@ -203,22 +229,28 @@ flowchart LR
 | `rules.py` | The seven detection rules | `models` |
 | `output.py` | Renders findings as table, JSON, CSV or Markdown | `models` |
 
-## Exit codes
+## Built with
 
-| Code | Meaning |
-|---|---|
-| 0 | Success, with or without findings |
-| 1 | Not used on purpose: only an unexpected internal error (uncaught exception) |
-| 2 | Usage error (bad arguments, out-of-range flags, bad or too early `--now`), or a load error |
+**Languages** (GitHub language stats, checked 2026-10-21): Python 100%
 
-Load errors include a missing data directory, a non-regular file, a file over 200 MB, unreadable
-files, invalid UTF-8 or JSON, nesting too deep, malformed entries, non-string or control-character
-identity fields, an Okta `status` that is not a string, non-boolean MFA/privilege/active flags,
-and invalid timestamps. Email syntax is not validated.
-Errors are one line on stderr, without a traceback.
+**AI tools:**
 
-## Hardening
+- Grok Bot (confirmed by Chris, 2026-10-21)
+- Cursor cloud agents (confirmed by Chris, 2026-10-21)
 
+Commits made with AI help carry a `Co-authored-by` trailer from now on. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for planned phases and [CHANGELOG.md](CHANGELOG.md) for released
+versions.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for supported versions and how to report a vulnerability privately.
+
+### Hardening
 - **Control characters:** identity fields containing Unicode Cc, Cf, Cs, Zl or Zp characters
   (C0/C1 controls including CSI, bidi overrides and isolates, zero-width characters, unpaired
   surrogates, U+2028/U+2029 line separators) are rejected on load, and the error names the code
@@ -231,22 +263,15 @@ Errors are one line on stderr, without a traceback.
   prefixed with `'`.
 - **Read-only:** no network calls and no writes; output goes to stdout only.
 
-## Development
+## Contributing
 
-```bash
-pip install -e '.[dev]'
-ruff check . && ruff format --check .
-pytest            # branch coverage, enforces --cov-fail-under=85
-mypy && bandit -r src && pip-audit --skip-editable
-```
-
-## More
-
-- [ROADMAP.md](ROADMAP.md): phases v0.1 to v1.0
-- [SECURITY.md](SECURITY.md): how to report a vulnerability
-- [CHANGELOG.md](CHANGELOG.md): release notes
-- [SPEC.md](SPEC.md): scope and principles
+See [CONTRIBUTING.md](CONTRIBUTING.md), including how to credit AI tools in commits.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Acknowledgments
+
+README layout adapted from
+[Best-README-Template](https://github.com/othneildrew/Best-README-Template) by Othneil Drew.
