@@ -15,7 +15,13 @@ Bitbucket, and explains every finding.**
 
 ## Quick start
 
-### Try it
+### Demo
+
+<p align="center"><img src="docs/assets/demo.gif" alt="linchpin v0.2.1 demo: signals and identity findings from seeded offline fixtures" width="100%"></p>
+
+The GIF replays real v0.2.1 output using only `--demo` seeded data (no Entra, Okta, Crowd, or Bitbucket account). [Run the demo](docs/demo.md).
+
+## Try it
 ```bash
 pip install git+https://github.com/chriswayneh/linchpin.git@v0.2.1
 linchpin identity --demo
