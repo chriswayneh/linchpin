@@ -13,6 +13,17 @@
 **A read-only CLI that finds identity drift across Entra ID, Okta, Atlassian Crowd and
 Bitbucket, and explains every finding.**
 
+## Demo
+
+<p align="center">
+<img src="docs/assets/demo.gif"
+alt="linchpin v0.2.1 demo: signals and identity from seeded fixtures"
+width="100%">
+</p>
+
+The GIF replays real v0.2.1 `--demo` output (seeded data only; no IdP or
+app accounts). [Run the demo](docs/demo.md).
+
 ## Quick start
 
 ### Try it
